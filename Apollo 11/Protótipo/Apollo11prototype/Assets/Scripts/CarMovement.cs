@@ -14,7 +14,7 @@ public enum TurnAngle{
 public struct Movement
 {
 	public float time;
-	public int direction;
+	public TurnAngle direction;
 	public bool FREE_FORWARD;
 	public bool FREE_LEFT;
 	public bool FREE_RIGHT;
@@ -22,7 +22,7 @@ public struct Movement
 
 public class CarMovement : MonoBehaviour {
 
-	[SerializeField] private float speed 			= 1.0f;  //velocidade do carro
+	[SerializeField] private float speed 			= 5.0f;  //velocidade do carro
 	[SerializeField] private float moveTime 		= 1.0f;  //tempo que o carro ficará em movimento
 	[SerializeField] private float turnTime 		= 0.5f;  //tempo que o carro demorará para rotacionar
 	private bool isMoving = false;
@@ -81,30 +81,57 @@ public class CarMovement : MonoBehaviour {
 			yield return new WaitForSeconds (turnTime);
 			Move (movement.time);
 			yield return new WaitForSeconds (movement.time);
-			if (movement.direction == (int)TurnAngle.LEFT) {
-				Rotate (TurnAngle.RIGHT, turnTime);
-			} else {
-				Rotate (TurnAngle.LEFT, turnTime);
-			}
+			Rotate (movement.direction, turnTime);
 		}
 	}
 
 	// Use this for initialization
 	void Start () {
-		Movement movement = new Movement ();
+		/*Movement movement = new Movement ();
 		movement.time = moveTime;
-		movement.direction = 90;
+		movement.direction = TurnAngle.RIGHT;
 		movementStack.Push (movement);
 
 		movement.time = moveTime;
-		movement.direction = 90;
+		movement.direction = TurnAngle.RIGHT;
 		movementStack.Push (movement);
 
 		movement.time = moveTime;
-		movement.direction = -90;
-		movementStack.Push (movement);
+		movement.direction = TurnAngle.LEFT;
+		movementStack.Push (movement);*/
 	}
-	
+
+	/// <summary>
+	/// Cria uma série de movimentos e os empurra para a pilha de movimentos
+	/// </summary>
+	/// <returns>The movements.</returns>
+	public IEnumerator PresetMovements(){
+		Movement movement = new Movement ();
+		movement.time = 1.0f;
+		movement.direction = TurnAngle.RIGHT;
+		movementStack.Push (movement);
+		Rotate (movement.direction, turnTime);
+		yield return new WaitForSeconds (turnTime);
+		Move (movement.time);
+		yield return new WaitForSeconds (movement.time);
+
+		movement.time = 3.0f;
+		movement.direction = TurnAngle.RIGHT;
+		movementStack.Push (movement);
+		Rotate (movement.direction, turnTime);
+		yield return new WaitForSeconds (turnTime);
+		Move (movement.time);
+		yield return new WaitForSeconds (movement.time);
+
+		movement.time = 2.0f;
+		movement.direction = TurnAngle.LEFT;
+		movementStack.Push (movement);
+		Rotate (movement.direction, turnTime);
+		yield return new WaitForSeconds (turnTime);
+		Move (movement.time);
+		yield return new WaitForSeconds (movement.time);
+	}
+
 	// Update is called once per frame
 	void Update () {
 		if (Input.GetKeyUp (KeyCode.UpArrow) && !isRotating && !isMoving) {
@@ -116,8 +143,11 @@ public class CarMovement : MonoBehaviour {
 		if (Input.GetKeyUp (KeyCode.LeftArrow) && !isRotating && !isMoving) {
 			Rotate (TurnAngle.LEFT, turnTime);
 		}
-		if (Input.GetKeyUp (KeyCode.P)) {
+		if (Input.GetKeyUp (KeyCode.R) && !isRotating && !isMoving) {
 			StartCoroutine(Rewind ());
+		}
+		if (Input.GetKeyUp (KeyCode.S) && !isRotating && !isMoving) {
+			StartCoroutine(PresetMovements());
 		}
 	}
 }
