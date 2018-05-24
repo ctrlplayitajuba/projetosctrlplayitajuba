@@ -7,7 +7,17 @@ using UnityEngine;
 /// </summary>
 public enum TurnAngle{
 	RIGHT = 90,
-	LEFT = -90
+	LEFT = -90,
+	BACKWARDS = 180
+}
+
+public struct Movement
+{
+	public float time;
+	public int direction;
+	public bool FREE_FORWARD;
+	public bool FREE_LEFT;
+	public bool FREE_RIGHT;
 }
 
 public class CarMovement : MonoBehaviour {
@@ -17,13 +27,13 @@ public class CarMovement : MonoBehaviour {
 	[SerializeField] private float turnTime 		= 0.5f;  //tempo que o carro demorará para rotacionar
 	private bool isMoving = false;
 	private bool isRotating = false;
+	private Stack<Movement> movementStack = new Stack<Movement>();
 
 	/// <summary>
 	/// Indica que o movimento do carro terminou
 	/// </summary>
 	private void FinishedMoving(){
 		isMoving = false;
-
 	}
 
 	/// <summary>
@@ -49,8 +59,8 @@ public class CarMovement : MonoBehaviour {
 	/// <summary>
 	/// Método que faz o carro girar no própio eixo por "angle" graus
 	/// </summary>
-	/// <param name="angle">ângulo em graus que o carro vai virar</param>
-	/// <param name="turnTime">tempo que demora para o carro girar</param>
+	/// <param name="angle"> ângulo em graus que o carro vai virar </param>
+	/// <param name="turnTime"> tempo que demora para o carro girar </param>
 	public void Rotate (TurnAngle angle, float turnTime){
 		isRotating = true;
 		iTween.RotateBy (gameObject, iTween.Hash (
@@ -60,9 +70,39 @@ public class CarMovement : MonoBehaviour {
 			"oncomplete", "FinishedRotating"));
 	}
 
+	/// <summary>
+	/// Retira o último movimento realizado da pilha de movimentos
+	/// e executa seu inverso
+	/// </summary>
+	private IEnumerator Rewind(){
+		if (movementStack.Count != 0) {
+			Movement movement = movementStack.Pop ();
+			Rotate (TurnAngle.BACKWARDS, turnTime);
+			yield return new WaitForSeconds (turnTime);
+			Move (movement.time);
+			yield return new WaitForSeconds (movement.time);
+			if (movement.direction == (int)TurnAngle.LEFT) {
+				Rotate (TurnAngle.RIGHT, turnTime);
+			} else {
+				Rotate (TurnAngle.LEFT, turnTime);
+			}
+		}
+	}
+
 	// Use this for initialization
 	void Start () {
-		
+		Movement movement = new Movement ();
+		movement.time = moveTime;
+		movement.direction = 90;
+		movementStack.Push (movement);
+
+		movement.time = moveTime;
+		movement.direction = 90;
+		movementStack.Push (movement);
+
+		movement.time = moveTime;
+		movement.direction = -90;
+		movementStack.Push (movement);
 	}
 	
 	// Update is called once per frame
@@ -75,6 +115,9 @@ public class CarMovement : MonoBehaviour {
 		}
 		if (Input.GetKeyUp (KeyCode.LeftArrow) && !isRotating && !isMoving) {
 			Rotate (TurnAngle.LEFT, turnTime);
+		}
+		if (Input.GetKeyUp (KeyCode.P)) {
+			StartCoroutine(Rewind ());
 		}
 	}
 }
