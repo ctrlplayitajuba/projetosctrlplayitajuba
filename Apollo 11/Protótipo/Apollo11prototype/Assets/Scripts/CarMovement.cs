@@ -2,12 +2,19 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Enumerado que indica o ângulo de virar para a direita (RIGHT) e esquerda (LEFT)
+/// </summary>
+public enum TurnAngle{
+	RIGHT = 90,
+	LEFT = -90
+}
+
 public class CarMovement : MonoBehaviour {
 
-	[SerializeField] private float speed = 1.0f;
-	[SerializeField] private float time = 1.0f;
-	[SerializeField] private float turnTime = 0.5f;
-	[SerializeField] private int angle = 90;
+	[SerializeField] private float speed 			= 1.0f;  //velocidade do carro
+	[SerializeField] private float moveTime 		= 1.0f;  //tempo que o carro ficará em movimento
+	[SerializeField] private float turnTime 		= 0.5f;  //tempo que o carro demorará para rotacionar
 	private bool isMoving = false;
 	private bool isRotating = false;
 
@@ -44,10 +51,10 @@ public class CarMovement : MonoBehaviour {
 	/// </summary>
 	/// <param name="angle">ângulo em graus que o carro vai virar</param>
 	/// <param name="turnTime">tempo que demora para o carro girar</param>
-	public void Rotate (int angle, float turnTime){
+	public void Rotate (TurnAngle angle, float turnTime){
 		isRotating = true;
 		iTween.RotateBy (gameObject, iTween.Hash (
-			"y", angle/360.0f,
+			"y", (int)angle/360.0f,
 			"time", turnTime,
 			"easetype", iTween.EaseType.linear,
 			"oncomplete", "FinishedRotating"));
@@ -61,13 +68,13 @@ public class CarMovement : MonoBehaviour {
 	// Update is called once per frame
 	void Update () {
 		if (Input.GetKeyUp (KeyCode.UpArrow) && !isRotating && !isMoving) {
-			Move (time);
+			Move (moveTime);
 		}
 		if (Input.GetKeyUp (KeyCode.RightArrow) && !isRotating && !isMoving) {
-			Rotate (90, turnTime);
+			Rotate (TurnAngle.RIGHT, turnTime);
 		}
 		if (Input.GetKeyUp (KeyCode.LeftArrow) && !isRotating && !isMoving) {
-			Rotate (-90, turnTime);
+			Rotate (TurnAngle.LEFT, turnTime);
 		}
 	}
 }
