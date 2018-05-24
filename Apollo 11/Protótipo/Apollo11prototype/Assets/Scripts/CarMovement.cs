@@ -9,12 +9,21 @@ public class CarMovement : MonoBehaviour {
 	[SerializeField] private float turnTime = 0.5f;
 	[SerializeField] private int angle = 90;
 	private bool isMoving = false;
+	private bool isRotating = false;
 
 	/// <summary>
 	/// Indica que o movimento do carro terminou
 	/// </summary>
 	private void FinishedMoving(){
 		isMoving = false;
+
+	}
+
+	/// <summary>
+	/// Indica que a rotação do carro terminou
+	/// </summary>
+	private void FinishedRotating(){
+		isRotating = false;
 	}
 
 	/// <summary>
@@ -36,10 +45,12 @@ public class CarMovement : MonoBehaviour {
 	/// <param name="angle">ângulo em graus que o carro vai virar</param>
 	/// <param name="turnTime">tempo que demora para o carro girar</param>
 	public void Rotate (int angle, float turnTime){
+		isRotating = true;
 		iTween.RotateBy (gameObject, iTween.Hash (
 			"y", angle/360.0f,
 			"time", turnTime,
-			"easetype", iTween.EaseType.linear));
+			"easetype", iTween.EaseType.linear,
+			"oncomplete", "FinishedRotating"));
 	}
 
 	// Use this for initialization
@@ -49,9 +60,14 @@ public class CarMovement : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-		if (!isMoving) {
-			Rotate (angle, turnTime);
+		if (Input.GetKeyUp (KeyCode.UpArrow) && !isRotating && !isMoving) {
 			Move (time);
+		}
+		if (Input.GetKeyUp (KeyCode.RightArrow) && !isRotating && !isMoving) {
+			Rotate (90, turnTime);
+		}
+		if (Input.GetKeyUp (KeyCode.LeftArrow) && !isRotating && !isMoving) {
+			Rotate (-90, turnTime);
 		}
 	}
 }

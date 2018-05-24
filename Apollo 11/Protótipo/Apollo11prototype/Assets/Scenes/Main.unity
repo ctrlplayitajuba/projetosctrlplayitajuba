@@ -172,6 +172,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   speed: 1
+  time: 1
+  turnTime: 0.5
+  angle: 90
 --- !u!1 &1434645498
 GameObject:
   m_ObjectHideFlags: 0
