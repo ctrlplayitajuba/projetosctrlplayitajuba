@@ -39,7 +39,12 @@ public class CarMovement : MonoBehaviour {
 	private bool isMoving 							= false;					//indica se o carro está se movendo
 	private bool isRotating 						= false;					//indica se o carro está rotacionando
 	private Stack<Movement> movementStack 			= new Stack<Movement>();	//pilha que guarda a sequência de movimentos do carro
-	private float CORRIDOR_WIDTH					= 100.0f;					//largura da pista
+	private float CORRIDOR_WIDTH					= 10.0f;					//largura da pista
+	private float timer								= 0.0f;						//tempo para detecção de paredes
+	private bool canMove							= false;					//indica se o carro pode andar	
+	private TurnAngle initialTurn					= TurnAngle.FORWARDS;		//direção que o carro virou no início do movimento
+	private float movementStartTime					= 0f;						//momento que o movimento começou
+	private float movementEndTime					= 0f;						//momento que o movimento terminou
 	#endregion
 
 	/// <summary>
@@ -57,14 +62,27 @@ public class CarMovement : MonoBehaviour {
 	}
 
 	/// <summary>
+	/// Move o carro na direção desejada já empilhando o movimento
+	/// </summary>
+	/// <param name="moveTime">Move time.</param>
+	/// <param name="directionAngle">Direction angle.</param>
+	/// <param name="turnTime">Turn time.</param>
+	public void MoveCar(float moveTime, TurnAngle directionAngle, float turnTime){
+		Movement movement = new Movement ();
+		movement.time = moveTime;
+		movement.direction = directionAngle;
+		movementStack.Push (movement);
+		Rotate (movement.direction, turnTime);
+	}
+
+	/// <summary>
 	/// Método que faz o carro se mover para frente por "time" segundos
 	/// </summary>
 	/// <param name="time">tempo que o carro continuará em movimento</param>
-	public void Move (float time){
-		isMoving = true;
+	public void Move (float moveTime){
 		iTween.MoveBy(gameObject, iTween.Hash(
-			"x", time*speed, 
-			"time", time, 
+			"x", moveTime*speed, 
+			"time", moveTime, 
 			"easetype", iTween.EaseType.linear,
 			"oncomplete", "FinishedMoving"));
 	}
@@ -88,6 +106,7 @@ public class CarMovement : MonoBehaviour {
 	/// e executa seu inverso
 	/// </summary>
 	private IEnumerator Rewind(){
+		canMove = false;
 		if (movementStack.Count != 0) {
 			Movement movement = movementStack.Pop ();
 			Rotate (TurnAngle.BACKWARDS, turnTime);
@@ -111,6 +130,86 @@ public class CarMovement : MonoBehaviour {
 
 	private Vector3 GetForwardDirection(){
 		return transform.right;
+	}
+
+	private Vector3 GetRightDirection(){
+		return - transform.forward;
+	}
+
+	private Vector3 GetLeftDirection(){
+		return transform.forward;
+	}
+
+	private void Detection(){
+		bool canTurnLeft, canTurnRight, canGoForward;
+		canTurnLeft = canTurnRight = false;
+		canGoForward = true;
+		RaycastHit hit;
+		Ray ray = new Ray();
+		ray.origin = new Vector3 (transform.position.x, transform.position.y, transform.position.z);
+
+		//detecta esquerda
+		ray.direction = GetLeftDirection();
+		if (!Physics.Raycast (ray, out hit,	CORRIDOR_WIDTH - 2)) {
+			canTurnLeft = true;
+			canMove = false;
+		}
+		Debug.DrawLine(ray.origin, hit.point);
+		Debug.Log (hit.collider);
+
+		//detect direita
+		ray.direction = GetRightDirection();
+		if (!Physics.Raycast (ray, out hit,	CORRIDOR_WIDTH - 2)) {
+			canTurnRight = true;
+			canMove = false;
+		}
+		Debug.DrawLine(ray.origin, hit.point);
+		Debug.Log (hit.collider);
+
+		//detect frente
+		ray.direction = GetForwardDirection();
+		if (Physics.Raycast (ray, out hit,	CORRIDOR_WIDTH - 2)) {
+			canGoForward = false;
+			canMove = false;
+		}
+		Debug.DrawLine(ray.origin, hit.point);
+		Debug.Log (hit.collider);
+
+		NewMovement (canTurnLeft, canTurnRight, canGoForward);
+	}
+
+	private void NewMovement(bool canTurnLeft, bool canTurnRight, bool canGoForward){
+		if (canGoForward && !canTurnLeft && !canTurnRight) {
+			canMove = true;
+		} else {
+			movementEndTime = Time.time;
+			if (!canGoForward && canTurnRight) {
+				initialTurn = TurnAngle.RIGHT;
+				Rotate (initialTurn, turnTime);
+				Movement movement = new Movement ();
+				movement.direction = initialTurn;
+				movement.time = movementEndTime - movementStartTime;
+				movementStartTime = Time.time;
+				canMove = true;
+			} else if (!canGoForward && canTurnLeft) {
+				initialTurn = TurnAngle.LEFT;
+				Rotate (initialTurn, turnTime);
+				Movement movement = new Movement ();
+				movement.direction = initialTurn;
+				movement.time = movementEndTime - movementStartTime;
+				movementStartTime = Time.time;
+				canMove = true;
+			} else if (canGoForward && (canTurnLeft || canTurnRight)){
+				initialTurn = TurnAngle.FORWARDS;
+				Movement movement = new Movement ();
+				movement.direction = initialTurn;
+				movement.time = movementEndTime - movementStartTime;
+				movementStartTime = Time.time;
+				canMove = true;
+			} else{
+				Rewind ();
+			}
+		}
 	}
 
 	// Use this for initialization
@@ -221,5 +320,15 @@ public class CarMovement : MonoBehaviour {
 		if (Input.GetKeyUp (KeyCode.S) && CanMove()) {
 			StartCoroutine(PresetMovements());
 		}
+
+		timer += Time.deltaTime;
+		if (timer > 1) {
+			if(!isRotating)
+				Detection ();
+			timer = 0;
+		}
+
+		if (canMove && !isRotating)
+			Move (0.01f);
 	}
 }
