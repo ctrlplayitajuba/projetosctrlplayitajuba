@@ -239,12 +239,12 @@ Prefab:
     - target: {fileID: 114556273092595014, guid: 5cc03f3fb7f655c458bdbde342e4927e,
         type: 2}
       propertyPath: speed
-      value: 10
+      value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 114556273092595014, guid: 5cc03f3fb7f655c458bdbde342e4927e,
         type: 2}
       propertyPath: moveTime
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 136365293081412558, guid: 5cc03f3fb7f655c458bdbde342e4927e, type: 2}
@@ -410,6 +410,28 @@ Prefab:
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: 51d7955d364a4254a9d1b204545d2623, type: 2}
   m_IsPrefabParent: 0
+--- !u!1 &510350340 stripped
+GameObject:
+  m_PrefabParentObject: {fileID: 1251738443868964, guid: 5cc03f3fb7f655c458bdbde342e4927e,
+    type: 2}
+  m_PrefabInternal: {fileID: 328931697}
+--- !u!143 &510350341
+CharacterController:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 510350340}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Height: 2
+  m_Radius: 0.5
+  m_SlopeLimit: 45
+  m_StepOffset: 0.3
+  m_SkinWidth: 0.08
+  m_MinMoveDistance: 0.001
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1001 &555716609
 Prefab:
   m_ObjectHideFlags: 0

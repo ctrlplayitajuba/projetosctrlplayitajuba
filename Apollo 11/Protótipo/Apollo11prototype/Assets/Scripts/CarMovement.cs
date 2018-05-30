@@ -34,7 +34,7 @@ public class CarMovement : MonoBehaviour {
 	/// </summary>
 	#region
 	[SerializeField] private float speed 			= 10.0f; 					//velocidade do carro
-	[SerializeField] private float moveTime 		= 1.0f;  					//tempo que o carro ficará em movimento
+	[SerializeField] private float moveTime 		= 0f;  				    	//tempo que o carro ficará em movimento
 	[SerializeField] private float turnTime 		= 0.5f;  					//tempo que o carro demorará para rotacionar
 	private bool isMoving 							= false;					//indica se o carro está se movendo
 	private bool isRotating 						= false;					//indica se o carro está rotacionando
@@ -44,7 +44,11 @@ public class CarMovement : MonoBehaviour {
 	private bool canMove							= false;					//indica se o carro pode andar	
 	private TurnAngle initialTurn					= TurnAngle.FORWARDS;		//direção que o carro virou no início do movimento
 	private float movementStartTime					= 0f;						//momento que o movimento começou
-	private float movementEndTime					= 0f;						//momento que o movimento terminou
+	private float movementEndTime					= 0f;                       //momento que o movimento terminou
+	private CharacterController controller;
+	private bool isCreatingMovement                 = false;
+	private bool finished = false;
+	private bool isRewinding = false;
 	#endregion
 
 	/// <summary>
@@ -59,20 +63,13 @@ public class CarMovement : MonoBehaviour {
 	/// </summary>
 	private void FinishedRotating(){
 		isRotating = false;
+		moveTime = 0f;
+		StartCoroutine(Wait(CORRIDOR_WIDTH / speed));
 	}
 
-	/// <summary>
-	/// Move o carro na direção desejada já empilhando o movimento
-	/// </summary>
-	/// <param name="moveTime">Move time.</param>
-	/// <param name="directionAngle">Direction angle.</param>
-	/// <param name="turnTime">Turn time.</param>
-	public void MoveCar(float moveTime, TurnAngle directionAngle, float turnTime){
-		Movement movement = new Movement ();
-		movement.time = moveTime;
-		movement.direction = directionAngle;
-		movementStack.Push (movement);
-		Rotate (movement.direction, turnTime);
+	private IEnumerator Wait (float time) { 
+		yield return new WaitForSeconds(time);
+		isCreatingMovement = false;
 	}
 
 	/// <summary>
@@ -107,6 +104,7 @@ public class CarMovement : MonoBehaviour {
 	/// </summary>
 	private IEnumerator Rewind(){
 		canMove = false;
+		isRewinding = true;
 		if (movementStack.Count != 0) {
 			Movement movement = movementStack.Pop ();
 			Rotate (TurnAngle.BACKWARDS, turnTime);
@@ -118,6 +116,7 @@ public class CarMovement : MonoBehaviour {
 			else
 				Rotate (movement.direction, turnTime);
 		}
+
 	}
 
 	/// <summary>
@@ -155,7 +154,6 @@ public class CarMovement : MonoBehaviour {
 			canMove = false;
 		}
 		Debug.DrawLine(ray.origin, hit.point);
-		Debug.Log (hit.collider);
 
 		//detect direita
 		ray.direction = GetRightDirection();
@@ -164,7 +162,6 @@ public class CarMovement : MonoBehaviour {
 			canMove = false;
 		}
 		Debug.DrawLine(ray.origin, hit.point);
-		Debug.Log (hit.collider);
 
 		//detect frente
 		ray.direction = GetForwardDirection();
@@ -173,7 +170,6 @@ public class CarMovement : MonoBehaviour {
 			canMove = false;
 		}
 		Debug.DrawLine(ray.origin, hit.point);
-		Debug.Log (hit.collider);
 
 		NewMovement (canTurnLeft, canTurnRight, canGoForward);
 	}
@@ -181,126 +177,47 @@ public class CarMovement : MonoBehaviour {
 	private void NewMovement(bool canTurnLeft, bool canTurnRight, bool canGoForward){
 		if (canGoForward && !canTurnLeft && !canTurnRight) {
 			canMove = true;
-		} else {
-			movementEndTime = Time.time;
-			if (!canGoForward && canTurnRight) {
-				initialTurn = TurnAngle.RIGHT;
-				Rotate (initialTurn, turnTime);
-				Movement movement = new Movement ();
-				movement.direction = initialTurn;
-				movement.time = movementEndTime - movementStartTime;
-				movementStartTime = Time.time;
-				canMove = true;
-			} else if (!canGoForward && canTurnLeft) {
-				initialTurn = TurnAngle.LEFT;
-				Rotate (initialTurn, turnTime);
-				Movement movement = new Movement ();
-				movement.direction = initialTurn;
-				movement.time = movementEndTime - movementStartTime;
-				movementStartTime = Time.time;
-				canMove = true;
-			} else if (canGoForward && (canTurnLeft || canTurnRight)){
-				initialTurn = TurnAngle.FORWARDS;
-				Movement movement = new Movement ();
-				movement.direction = initialTurn;
-				movement.time = movementEndTime - movementStartTime;
-				movementStartTime = Time.time;
-				canMove = true;
-			} else{
-				Rewind ();
+		}
+		else {
+			if (!isCreatingMovement) {
+				isCreatingMovement = true;
+				movementEndTime = Time.time;
+				PileMovement(initialTurn);
+				if (!canGoForward && canTurnRight) {
+					Rotate(TurnAngle.RIGHT, turnTime);
+					initialTurn = TurnAngle.RIGHT;
+					Debug.Log("RIGHT");
+				}
+				else if (!canGoForward && canTurnLeft) {
+					Rotate(TurnAngle.LEFT, turnTime);
+					initialTurn = TurnAngle.LEFT;
+					Debug.Log("LEFT");
+				}
+				else if (canGoForward && (canTurnLeft || canTurnRight)) {
+					Rotate(TurnAngle.FORWARDS, turnTime);
+					initialTurn = TurnAngle.FORWARDS;
+					Debug.Log("FORWARDS");
+				}
+				else {
+					finished = true;
+					Debug.Log("REWIND");
+				}
 			}
 		}
 	}
 
-	// Use this for initialization
-	void Start () {
+	private void PileMovement(TurnAngle turn) {
+		Movement movement = new Movement();
+		movement.direction = turn;
+		movement.time = /*movementEndTime - movementStartTime*/ moveTime;
+		movementStack.Push(movement);
+		movementStartTime = Time.time;
+		canMove = true;
 	}
 
-	/// <summary>
-	/// Cria uma série de movimentos e os empurra para a pilha de movimentos
-	/// </summary>
-	/// <returns>The movements.</returns>
-	public IEnumerator PresetMovements(){
-		Movement movement = new Movement ();
-		movement.time = 2.0f;
-		movement.direction = TurnAngle.FORWARDS;
-		movementStack.Push (movement);
-		Rotate (movement.direction, turnTime);
-		yield return new WaitForSeconds (turnTime);
-		Move (movement.time);
-		yield return new WaitForSeconds (movement.time);
-		RaycastHit hit;
-		Ray ray = new Ray();
-		ray.origin = new Vector3 (transform.position.x, transform.position.y, transform.position.z);
-		ray.direction = GetForwardDirection();
-		Physics.Raycast (ray, out hit,	CORRIDOR_WIDTH/2);
-		Debug.DrawLine(ray.origin, hit.point);
-		Debug.Log (hit.collider);
-
-		movement.time = 3.0f;
-		movement.direction = TurnAngle.LEFT;
-		movementStack.Push (movement);
-		Rotate (movement.direction, turnTime);
-		yield return new WaitForSeconds (turnTime);
-		Move (movement.time);
-		yield return new WaitForSeconds (movement.time);
-		ray.origin = new Vector3 (transform.position.x, transform.position.y, transform.position.z);
-		ray.direction = GetForwardDirection();
-		Physics.Raycast (ray, out hit,	CORRIDOR_WIDTH/2);
-		Debug.DrawLine(ray.origin, hit.point);
-		Debug.Log (hit.collider);
-
-		movement.time = 2.0f;
-		movement.direction = TurnAngle.RIGHT;
-		movementStack.Push (movement);
-		Rotate (movement.direction, turnTime);
-		yield return new WaitForSeconds (turnTime);
-		Move (movement.time);
-		yield return new WaitForSeconds (movement.time);
-		ray.origin = new Vector3 (transform.position.x, transform.position.y, transform.position.z);
-		ray.direction = GetForwardDirection();
-		Physics.Raycast (ray, out hit,	CORRIDOR_WIDTH/2);
-		Debug.DrawLine(ray.origin, hit.point);
-		Debug.Log (hit.collider);
-
-		movement.time = 2.0f;
-		movement.direction = TurnAngle.LEFT;
-		movementStack.Push (movement);
-		Rotate (movement.direction, turnTime);
-		yield return new WaitForSeconds (turnTime);
-		Move (movement.time);
-		yield return new WaitForSeconds (movement.time);
-		ray.origin = new Vector3 (transform.position.x, transform.position.y, transform.position.z);
-		ray.direction = GetForwardDirection();
-		Physics.Raycast (ray, out hit,	CORRIDOR_WIDTH/2);
-		Debug.DrawLine(ray.origin, hit.point);
-		Debug.Log (hit.collider);
-
-		movement.time = 4.0f;
-		movement.direction = TurnAngle.LEFT;
-		movementStack.Push (movement);
-		Rotate (movement.direction, turnTime);
-		yield return new WaitForSeconds (turnTime);
-		Move (movement.time);
-		yield return new WaitForSeconds (movement.time);
-		ray.origin = new Vector3 (transform.position.x, transform.position.y, transform.position.z);
-		ray.direction = GetForwardDirection();
-		Physics.Raycast (ray, out hit,	CORRIDOR_WIDTH/2);
-		Debug.DrawLine(ray.origin, hit.point);
-		Debug.Log (hit.collider);
-
-		movement.time = 3.0f;
-		movement.direction = TurnAngle.LEFT;
-		movementStack.Push (movement);
-		Rotate (movement.direction, turnTime);
-		yield return new WaitForSeconds (turnTime);
-		Move (movement.time);
-		yield return new WaitForSeconds (movement.time);
-		ray.origin = new Vector3 (transform.position.x, transform.position.y, transform.position.z);
-		ray.direction = GetForwardDirection();
-		Physics.Raycast (ray, out hit,	CORRIDOR_WIDTH/2);
-		Debug.DrawLine(ray.origin, hit.point);
-		Debug.Log (hit.collider);
+	// Use this for initialization
+	void Start () {
+		controller = GetComponent<CharacterController>();
 	}
 
 	// Update is called once per frame
@@ -317,18 +234,20 @@ public class CarMovement : MonoBehaviour {
 		if (Input.GetKeyUp (KeyCode.R) && CanMove()) {
 			StartCoroutine(Rewind ());
 		}
-		if (Input.GetKeyUp (KeyCode.S) && CanMove()) {
-			StartCoroutine(PresetMovements());
-		}
 
-		timer += Time.deltaTime;
-		if (timer > 1) {
+		if (isCreatingMovement || finished)
+			timer = 0;
+		else
+			timer += Time.deltaTime;
+		if (timer > CORRIDOR_WIDTH / speed) {
 			if(!isRotating)
 				Detection ();
 			timer = 0;
 		}
 
-		if (canMove && !isRotating)
-			Move (0.01f);
+		if (canMove && !isRotating && !finished) {
+			controller.Move(GetForwardDirection() * speed * Time.deltaTime);
+			moveTime += Time.deltaTime;
+		}
 	}
 }
