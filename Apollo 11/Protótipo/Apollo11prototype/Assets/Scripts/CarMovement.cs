@@ -3,16 +3,6 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Enumerado que indica o ângulo de virar para a direita (RIGHT) e esquerda (LEFT)
-/// </summary>
-public enum TurnAngle{
-	RIGHT = 90,
-	LEFT = -90,
-	BACKWARDS = 180,
-	FORWARDS = 0
-}
-
-/// <summary>
 /// Estrutura que guarda:
 ///   - Tempo que o carro fica em movimento (time);
 ///   - Direção que o carro apontava no início do movimento (direction);
@@ -21,10 +11,11 @@ public enum TurnAngle{
 public struct Movement
 {
 	public float time;
-	public TurnAngle direction;
+	public int direction;
 	public bool FREE_FORWARD;
 	public bool FREE_LEFT;
 	public bool FREE_RIGHT;
+	public int correction;
 }
 
 public class CarMovement : MonoBehaviour {
@@ -48,8 +39,13 @@ public class CarMovement : MonoBehaviour {
 	private bool isReversing 						= false;
 	private bool isRewinding 						= false;
 	private Stack<Movement> movementStack 			= new Stack<Movement>();	//pilha que guarda a sequência de movimentos do carro
-	private TurnAngle initialTurn					= TurnAngle.FORWARDS;		//direção que o carro virou no início do movimento
+	private int initialTurn							= FORWARDS;					//direção que o carro virou no início do movimento
 	private CharacterController controller;										//character controller do carro
+	private int[] TurnAngle;													//vetor para as direções
+	private const int FORWARDS						= 0;
+	private const int RIGHT 						= 1;
+	private const int BACKWARDS 					= 2;
+	private const int LEFT 							= 3;
 	#endregion
 
 	/// <summary>
@@ -65,11 +61,6 @@ public class CarMovement : MonoBehaviour {
 	private void FinishedRotating(){
 		isRotating = false;
 		moveTime = 0f;
-		StartCoroutine(Wait(CORRIDOR_WIDTH / speed));
-	}
-
-	private IEnumerator Wait (float time) { 
-		yield return new WaitForSeconds(time);
 		isCreatingMovement = false;
 	}
 
@@ -90,10 +81,10 @@ public class CarMovement : MonoBehaviour {
 	/// </summary>
 	/// <param name="angle"> ângulo em graus que o carro vai virar </param>
 	/// <param name="turnTime"> tempo que demora para o carro girar </param>
-	public void Rotate (TurnAngle angle, float turnTime){
+	public void Rotate (int angle, float turnTime){
 		isRotating = true;
 		iTween.RotateBy (gameObject, iTween.Hash (
-			"y", (int)angle/360.0f,
+			"y", angle/360.0f,
 			"time", turnTime,
 			"easetype", iTween.EaseType.linear,
 			"oncomplete", "FinishedRotating"));
@@ -107,14 +98,14 @@ public class CarMovement : MonoBehaviour {
 		canMove = false;
 		if (movementStack.Count != 0) {
 			Movement movement = movementStack.Pop ();
-			Rotate (TurnAngle.BACKWARDS, turnTime);
+			Rotate (TurnAngle[BACKWARDS], turnTime);
 			yield return new WaitForSeconds (turnTime);
 			Move (movement.time);
 			yield return new WaitForSeconds (movement.time);
-			if(movement.direction == TurnAngle.FORWARDS)
-				Rotate (TurnAngle.BACKWARDS, turnTime);
+			if(movement.direction == TurnAngle[FORWARDS])
+				Rotate (TurnAngle[BACKWARDS+movement.correction], turnTime);
 			else
-				Rotate (movement.direction, turnTime);
+				Rotate (TurnAngle[movement.direction + movement.correction], turnTime);
 			yield return new WaitForSeconds (turnTime);
 		}
 		isReversing = false;
@@ -125,25 +116,36 @@ public class CarMovement : MonoBehaviour {
 		isRewinding = true;
 		while (movementStack.Count > 0) {
 			if (movementStack.Peek ().FREE_RIGHT) {
-				Rotate (TurnAngle.RIGHT, turnTime);
+				Rotate (TurnAngle[RIGHT], turnTime);
+				Movement movement = movementStack.Pop ();
+				movement.correction = -1;
+				movement.FREE_RIGHT = false;
+				movementStack.Push (movement);
 				Debug.Log ("ENTROU RIGHT");
 				break;
 			} else if (movementStack.Peek ().FREE_LEFT) {
-				Rotate (TurnAngle.LEFT, turnTime);
+				Rotate (TurnAngle[LEFT], turnTime);
+				Movement movement = movementStack.Pop ();
+				movement.correction = 1;
+				movement.FREE_LEFT = false;
+				movementStack.Push (movement);
 				Debug.Log ("ENTROU LEFT");
 				break;
 			} else {
 				Debug.Log ("ENTROU: " + i);
+				if (movementStack.Count < 1)
+					break;
 				i++;
+				int direction = movementStack.Peek ().direction;
 				StartCoroutine (ReverseMovement ());
 				isReversing = true;
 				yield return new WaitWhile (() => isReversing);
 				Movement movement = new Movement ();
 				movement = movementStack.Pop ();
 				movement.FREE_FORWARD = false;
-				if (movement.direction == TurnAngle.RIGHT)
+				if (direction == TurnAngle[RIGHT])
 					movement.FREE_RIGHT = false;
-				else if (movement.direction == TurnAngle.LEFT)
+				else if (direction == TurnAngle[LEFT])
 					movement.FREE_LEFT = false;
 				movementStack.Push (movement);
 			}
@@ -241,16 +243,16 @@ public class CarMovement : MonoBehaviour {
 				movementEndTime = Time.time;
 				PileMovement(initialTurn, canTurnLeft, canTurnRight, canGoForward);
 				if (!canGoForward && canTurnRight) {
-					Rotate(TurnAngle.RIGHT, turnTime);
-					initialTurn = TurnAngle.RIGHT;
+					Rotate(TurnAngle[RIGHT], turnTime);
+					initialTurn = RIGHT;
 				}
 				else if (!canGoForward && canTurnLeft) {
-					Rotate(TurnAngle.LEFT, turnTime);
-					initialTurn = TurnAngle.LEFT;
+					Rotate(TurnAngle[LEFT], turnTime);
+					initialTurn = LEFT;
 				}
 				else if (canGoForward && (canTurnLeft || canTurnRight)) {
-					Rotate(TurnAngle.FORWARDS, turnTime);
-					initialTurn = TurnAngle.FORWARDS;
+					Rotate(TurnAngle[FORWARDS], turnTime);
+					initialTurn = FORWARDS;
 				}
 				else {
 					Debug.Log("REWIND");
@@ -266,13 +268,14 @@ public class CarMovement : MonoBehaviour {
 	/// Empilha um novo movimento
 	/// </summary>
 	/// <param name="turn">Direção da rotação inicial do carro para o movimento</param>
-	private void PileMovement(TurnAngle turn, bool canTurnLeft, bool canTurnRight, bool canGoForward) {
+	private void PileMovement(int turn, bool canTurnLeft, bool canTurnRight, bool canGoForward) {
 		Movement movement = new Movement();
 		movement.direction = turn;
 		movement.time = /*movementEndTime - movementStartTime*/ moveTime;
 		movement.FREE_LEFT = canTurnLeft;
 		movement.FREE_RIGHT = canTurnRight;
 		movement.FREE_FORWARD = canGoForward;
+		Debug.Log ("DIREÇÃO: " + movement.direction + "\nTEMPO: " + movement.time + "\nLIVRE ESQUERDA: " + movement.FREE_LEFT + "\nLIVRE DIREITA: " + movement.FREE_RIGHT + "\nLIVRE FRENTE: " + movement.FREE_FORWARD);
 		movementStack.Push(movement);
 		movementStartTime = Time.time;
 		canMove = true;
@@ -281,6 +284,11 @@ public class CarMovement : MonoBehaviour {
 	// Use this for initialization
 	void Start () {
 		controller = GetComponent<CharacterController>();
+		TurnAngle = new int[4];
+		TurnAngle [FORWARDS] 	= 0;
+		TurnAngle [RIGHT] 		= 90;
+		TurnAngle [BACKWARDS] 	= 180;
+		TurnAngle [LEFT]		= -90;
 	}
 
 	// Update is called once per frame
