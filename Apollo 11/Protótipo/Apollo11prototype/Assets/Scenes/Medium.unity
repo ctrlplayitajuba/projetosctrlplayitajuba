@@ -1650,6 +1650,11 @@ Prefab:
       propertyPath: moveTime
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 114556273092595014, guid: 5cc03f3fb7f655c458bdbde342e4927e,
+        type: 2}
+      propertyPath: turnTime
+      value: 0.2
+      objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 136365293081412558, guid: 5cc03f3fb7f655c458bdbde342e4927e, type: 2}
   m_ParentPrefab: {fileID: 100100000, guid: 5cc03f3fb7f655c458bdbde342e4927e, type: 2}
