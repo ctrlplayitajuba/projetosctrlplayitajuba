@@ -41,6 +41,10 @@ public class CarMovement : MonoBehaviour {
 	//Variáveis STACK
 	private Stack<Movement> movementStack 			= new Stack<Movement>();	//pilha que guarda a sequência de movimentos do carro
 
+	//Variáveis LIST
+	private List<Movement> pathToEnd				= new List<Movement>();
+	private List<Movement> pathToStart				= new List<Movement>();
+
 	//Variáveis INT
 	private int initialTurn							= FORWARD;					//direção que o carro virou no início do movimento
 	private int[] TurnAngle;													//vetor para as direções
@@ -215,7 +219,7 @@ public class CarMovement : MonoBehaviour {
 		}
 		if (hit.collider != null) {
 			if (hit.collider.ToString ().Equals (finishCollider.ToString ())) {
-				reachedEnd = true;
+				ReachedEnd();
 			}
 		}
 		Debug.DrawLine(ray.origin, hit.point);
@@ -275,15 +279,30 @@ public class CarMovement : MonoBehaviour {
 	}
 
 	private IEnumerator ReturnToStart() {
-		for (int i = movementStack.Count; i > 0; i--) {
-			StartCoroutine(ReverseMovement ());
-			isReversing = true;
-			yield return new WaitWhile (() => isReversing);
+		Rotate (BACKWARDS, turnTime);
+		yield return new WaitForSeconds (turnTime);
+		for (int i = 0; i < pathToStart.Count; i++) {
+			Move (pathToStart.IndexOf (i));
 		}
 	}
 
 	private void ReachedEnd(){
-		
+		reachedEnd = true;
+		Stack<Movement> movesToStart = movementStack;
+		Stack<Movement> movesToEnd = new Stack<Movement>();
+		Movement movement = new Movement ();
+		for (int i = movesToStart.Count; i > 0; i--) {
+			movement = movesToStart.Pop ();
+			movesToEnd.Push (movement);
+			if (movement.direction == RIGHT)
+				movement.direction = LEFT;
+			else if (movement.direction == LEFT)
+				movement.direction = RIGHT;
+			pathToStart.Add (movement);
+		}
+		for (int i = movesToEnd.Count; i > 0; i--) {
+			pathToEnd.Add (movesToEnd.Pop ());
+		}
 	}
 
 	// Use this for initialization
