@@ -26,18 +26,17 @@ public class CarMovement : MonoBehaviour {
 	//Variáveis FLOAT
 	[SerializeField] private float speed 			= 10.0f; 					//velocidade do carro
 	[SerializeField] private float turnTime 		= 0.5f;  					//tempo que o carro demorará para rotacionar
-	private float moveTime 							= 0f;  				    	//tempo que o carro ficará em movimento
+	private float moveTime 							= 0f;  				    	//duração de um movimento
 	private float CORRIDOR_WIDTH					= 10.0f;					//largura da pista
-	private float timer								= 0.0f;						//tempo para detecção de paredes
+	private float timer								= 0.0f;						//timer para uma nova detecção de paredes
 
 	//Variáveis BOOL
 	private bool isRotating 						= false;					//indica se o carro está rotacionando
 	private bool isCreatingMovement                 = false;					//indica se o carro já está empilhando um movimento
 	private bool canMove							= false;					//indica se o carro pode andar
-	private bool finished 							= false;
 	private bool isReversing 						= false;					//indica se o carro está invertendo algum movimento da pilha
 	private bool isRewinding 						= false;					//indica se o carro entrou na fase de avaliação para desempilhar movimento
-	private bool end 								= false;					//indica se o carro encontrou o final da pista
+	private bool reachedEnd 						= false;					//indica se o carro encontrou o final da pista
 
 	//Variáveis STACK
 	private Stack<Movement> movementStack 			= new Stack<Movement>();	//pilha que guarda a sequência de movimentos do carro
@@ -55,9 +54,6 @@ public class CarMovement : MonoBehaviour {
 
 	//Variáveis COLLIDER
 	public Collider finishCollider;
-
-	//Variáveis STRING
-	private string[] TurnAngleName;
 	#endregion
 
 	/// <summary>
@@ -140,22 +136,23 @@ public class CarMovement : MonoBehaviour {
 			} else {
 				if (movementStack.Count < 1)
 					break;
-				int direction = movementStack.Peek ().direction;
-				StartCoroutine (ReverseMovement ());
-				isReversing = true;
-				yield return new WaitWhile (() => isReversing);
-				Movement movement = new Movement ();
-				movement = movementStack.Pop ();
-				movement.FREE_FORWARD = false;
-				if (direction == RIGHT)
-					movement.FREE_RIGHT = false;
-				else if (direction == LEFT)
-					movement.FREE_LEFT = false;
-				movementStack.Push (movement);
+				else {
+					int direction = movementStack.Peek ().direction;
+					isReversing = true;
+					StartCoroutine (ReverseMovement ());
+					yield return new WaitWhile (() => isReversing);
+					Movement movement = new Movement ();
+					movement = movementStack.Pop ();
+					movement.FREE_FORWARD = false;
+					if (direction == RIGHT)
+						movement.FREE_RIGHT = false;
+					else if (direction == LEFT)
+						movement.FREE_LEFT = false;
+					movementStack.Push (movement);
+				}
 			}
 		}
 		isRewinding = false;
-		finished = false;
 	}
 
 	/// <summary>
@@ -217,9 +214,9 @@ public class CarMovement : MonoBehaviour {
 			canMove = false;
 		}
 		if (hit.collider != null) {
-			if (hit.collider.ToString().Equals(finishCollider.ToString()))
-				end = true;
-			Debug.Log ("HIT: " + hit.collider.ToString () + " Finish: " + finishCollider.ToString ());
+			if (hit.collider.ToString ().Equals (finishCollider.ToString ())) {
+				reachedEnd = true;
+			}
 		}
 		Debug.DrawLine(ray.origin, hit.point);
 
@@ -255,8 +252,7 @@ public class CarMovement : MonoBehaviour {
 					initialTurn = FORWARD;
 				}
 				else {
-					finished = true;
-					if (!isRewinding)
+					if (!isRewinding && !reachedEnd)
 						StartCoroutine (Rewind ());
 				}
 			}
@@ -270,12 +266,24 @@ public class CarMovement : MonoBehaviour {
 	private void PileMovement(int turn, bool canTurnLeft, bool canTurnRight, bool canGoForward) {
 		Movement movement = new Movement();
 		movement.direction = turn;
-		movement.time = /*movementEndTime - movementStartTime*/ moveTime;
+		movement.time = moveTime;
 		movement.FREE_LEFT = canTurnLeft;
 		movement.FREE_RIGHT = canTurnRight;
 		movement.FREE_FORWARD = canGoForward;
 		movementStack.Push(movement);
 		canMove = true;
+	}
+
+	private IEnumerator ReturnToStart() {
+		for (int i = movementStack.Count; i > 0; i--) {
+			StartCoroutine(ReverseMovement ());
+			isReversing = true;
+			yield return new WaitWhile (() => isReversing);
+		}
+	}
+
+	private void ReachedEnd(){
+		
 	}
 
 	// Use this for initialization
@@ -287,17 +295,11 @@ public class CarMovement : MonoBehaviour {
 		TurnAngle [RIGHT] 		= 90;
 		TurnAngle [BACKWARDS] 	= 180;
 		TurnAngle [LEFT]		= -90;
-
-		TurnAngleName = new string[4];
-		TurnAngleName [FORWARD] 	= "FORWARD";
-		TurnAngleName [RIGHT] 		= "RIGHT";
-		TurnAngleName [BACKWARDS] 	= "BACKWARDS";
-		TurnAngleName [LEFT]		= "LEFT";
 	}
 
 	// Update is called once per frame
 	void Update () {
-		if (isCreatingMovement || finished)
+		if (isCreatingMovement || isRewinding || reachedEnd)
 			timer = 0;
 		else
 			timer += Time.deltaTime;
@@ -307,9 +309,14 @@ public class CarMovement : MonoBehaviour {
 			timer = 0;
 		}
 
-		if (canMove && !isRotating && !end) {
+		if (canMove && !isRotating && !reachedEnd) {
 			controller.Move(GetForwardDirection() * speed * Time.deltaTime);
 			moveTime += Time.deltaTime;
+		}
+
+		if (Input.GetKeyUp (KeyCode.R) && reachedEnd) {
+			StartCoroutine (ReturnToStart());
+			//StartCoroutine(ReverseMovement());
 		}
 	}
 }
