@@ -29,6 +29,7 @@ public class CarMovement : MonoBehaviour {
 	private float moveTime 							= 0f;  				    	//duração de um movimento
 	private float CORRIDOR_WIDTH					= 10.0f;					//largura da pista
 	private float timer								= 0.0f;						//timer para uma nova detecção de paredes
+	private const float movementDelay				= 1.05f;						//margem de segurança de tempo para os movimentos 
 
 	//Variáveis BOOL
 	private bool isRotating 						= false;					//indica se o carro está rotacionando
@@ -197,7 +198,7 @@ public class CarMovement : MonoBehaviour {
 
 		//detecta esquerda
 		ray.direction = GetLeftDirection();
-		if (!Physics.Raycast (ray, out hit,	CORRIDOR_WIDTH - 2)) {
+		if (!Physics.Raycast (ray, out hit,	CORRIDOR_WIDTH - 1.5f)) {
 			canTurnLeft = true;
 			canMove = false;
 		}
@@ -205,7 +206,7 @@ public class CarMovement : MonoBehaviour {
 
 		//detecta direita
 		ray.direction = GetRightDirection();
-		if (!Physics.Raycast (ray, out hit,	CORRIDOR_WIDTH - 2)) {
+		if (!Physics.Raycast (ray, out hit,	CORRIDOR_WIDTH - 1.5f)) {
 			canTurnRight = true;
 			canMove = false;
 		}
@@ -213,14 +214,13 @@ public class CarMovement : MonoBehaviour {
 
 		//detecta frente
 		ray.direction = GetForwardDirection();
-		if (Physics.Raycast (ray, out hit,	CORRIDOR_WIDTH - 2)) {
+		if (Physics.Raycast (ray, out hit,	CORRIDOR_WIDTH - 1.5f)) {
 			canGoForward = false;
 			canMove = false;
 		}
 		if (hit.collider != null) {
 			if (hit.collider.ToString ().Equals (finishCollider.ToString ())) {
-				ReachedEnd();
-				//reachedEnd = true;
+				reachedEnd = true;
 			}
 		}
 		Debug.DrawLine(ray.origin, hit.point);
@@ -244,6 +244,8 @@ public class CarMovement : MonoBehaviour {
 			if (!isCreatingMovement) {
 				isCreatingMovement = true;
 				PileMovement(initialTurn, canTurnLeft, canTurnRight, canGoForward);
+				if (reachedEnd)
+					MakePaths ();
 				if (!canGoForward && canTurnRight) {
 					Rotate(RIGHT, turnTime);
 					initialTurn = RIGHT;
@@ -253,7 +255,7 @@ public class CarMovement : MonoBehaviour {
 					initialTurn = LEFT;
 				}
 				else if (canGoForward && (canTurnLeft || canTurnRight)) {
-					Rotate(FORWARD, turnTime);
+					Rotate (FORWARD, turnTime);
 					initialTurn = FORWARD;
 				}
 				else {
@@ -279,6 +281,10 @@ public class CarMovement : MonoBehaviour {
 		canMove = true;
 	}
 
+	/// <summary>
+	/// Utiliza a lista de movimentos do destino final até o começo (pathToStart) para fazer o carro voltar à posição inicial
+	/// </summary>
+	/// <returns>delay</returns>
 	private IEnumerator ReturnToStart() {
 		Rotate (BACKWARDS, turnTime);
 		yield return new WaitForSeconds (turnTime);
@@ -287,21 +293,32 @@ public class CarMovement : MonoBehaviour {
 			yield return new WaitForSeconds (pathToStart[i].time);
 			Rotate (pathToStart[i].direction, turnTime);
 			yield return new WaitForSeconds (turnTime);
-		}/*
-		Debug.Log (movementStack.Count);
-		for (int i = movementStack.Count; i > 0; i--) {
-			isReversing = true;
-			StartCoroutine (ReverseMovement ());
-			yield return new WaitWhile (() => isReversing);
-		}*/
+		}
+		Rotate (BACKWARDS, turnTime);
+		yield return new WaitForSeconds (turnTime);
 	}
 
-	private void ReachedEnd(){
+	/// <summary>
+	/// Utiliza a lista de movimentos do destino começo até o final (pathToEnd) para fazer o carro ir até posição final
+	/// </summary>
+	/// <returns>delay</returns>
+	private IEnumerator GoToEnd() {
+		for (int i = 0; i < pathToEnd.Count; i++) {
+			Rotate (pathToEnd[i].direction, turnTime);
+			yield return new WaitForSeconds (turnTime);
+			Move (pathToEnd[i].time);
+			yield return new WaitForSeconds (pathToEnd[i].time * movementDelay);
+		}
+	}
+
+	/// <summary>
+	/// Cria listas com os movimentos necessários para ir do destino final até o começo e vice-versa
+	/// </summary>
+	private void MakePaths(){
 		reachedEnd = true;
 		Stack<Movement> movesToStart = new Stack<Movement>(new Stack<Movement>(new Stack<Movement>(movementStack)));
 		Stack<Movement> movesToEnd = new Stack<Movement>();
 		Movement movement = new Movement ();
-		Debug.Log (movementStack.Count);
 
 		for (int i = movesToStart.Count; i > 0; i--) {
 			movement = movesToStart.Pop ();
@@ -312,20 +329,8 @@ public class CarMovement : MonoBehaviour {
 				movement.direction = RIGHT;
 			pathToStart.Insert (0, movement);
 		}
-		Debug.Log (movementStack.Count);
 		for (int i = movesToEnd.Count; i > 0; i--) {
-			pathToEnd.Add (movesToEnd.Pop ());
-		}
-		Debug.Log (movementStack.Count);
-
-		Debug.Log ("\n\n\n  STACK");
-		for (int i = movementStack.Count; i > 0; i--) {
-			movement = movementStack.Pop ();
-			Debug.Log ("TIME: " + movement.time + " DIREÇÃO: " + movement.direction);
-		}
-		Debug.Log ("\n\n\n  LISTA");
-		for (int i = 0; i < pathToStart.Count; i++) {
-			Debug.Log ("TIME: " + pathToStart[i].time + " DIREÇÃO: " + pathToStart[i].direction);
+			pathToEnd.Insert (0, movesToEnd.Pop ());
 		}
 	}
 
@@ -357,8 +362,14 @@ public class CarMovement : MonoBehaviour {
 			moveTime += Time.deltaTime;
 		}
 
-		if (Input.GetKeyUp (KeyCode.R) && reachedEnd) {
+		if (Input.GetKeyUp (KeyCode.S) && reachedEnd) {
 			StartCoroutine (ReturnToStart());
+		}
+		if (Input.GetKeyUp (KeyCode.E) && reachedEnd) {
+			StartCoroutine (GoToEnd());
+		}
+		if (Input.GetKeyUp (KeyCode.R) && reachedEnd) {
+			Rotate(BACKWARDS, turnTime);
 		}
 	}
 }
