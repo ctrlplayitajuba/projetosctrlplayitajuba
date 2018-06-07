@@ -220,6 +220,7 @@ public class CarMovement : MonoBehaviour {
 		if (hit.collider != null) {
 			if (hit.collider.ToString ().Equals (finishCollider.ToString ())) {
 				ReachedEnd();
+				//reachedEnd = true;
 			}
 		}
 		Debug.DrawLine(ray.origin, hit.point);
@@ -282,15 +283,26 @@ public class CarMovement : MonoBehaviour {
 		Rotate (BACKWARDS, turnTime);
 		yield return new WaitForSeconds (turnTime);
 		for (int i = 0; i < pathToStart.Count; i++) {
-			Move (pathToStart.IndexOf (i));
-		}
+			Move (pathToStart[i].time);
+			yield return new WaitForSeconds (pathToStart[i].time);
+			Rotate (pathToStart[i].direction, turnTime);
+			yield return new WaitForSeconds (turnTime);
+		}/*
+		Debug.Log (movementStack.Count);
+		for (int i = movementStack.Count; i > 0; i--) {
+			isReversing = true;
+			StartCoroutine (ReverseMovement ());
+			yield return new WaitWhile (() => isReversing);
+		}*/
 	}
 
 	private void ReachedEnd(){
 		reachedEnd = true;
-		Stack<Movement> movesToStart = movementStack;
+		Stack<Movement> movesToStart = new Stack<Movement>(new Stack<Movement>(new Stack<Movement>(movementStack)));
 		Stack<Movement> movesToEnd = new Stack<Movement>();
 		Movement movement = new Movement ();
+		Debug.Log (movementStack.Count);
+
 		for (int i = movesToStart.Count; i > 0; i--) {
 			movement = movesToStart.Pop ();
 			movesToEnd.Push (movement);
@@ -298,10 +310,22 @@ public class CarMovement : MonoBehaviour {
 				movement.direction = LEFT;
 			else if (movement.direction == LEFT)
 				movement.direction = RIGHT;
-			pathToStart.Add (movement);
+			pathToStart.Insert (0, movement);
 		}
+		Debug.Log (movementStack.Count);
 		for (int i = movesToEnd.Count; i > 0; i--) {
 			pathToEnd.Add (movesToEnd.Pop ());
+		}
+		Debug.Log (movementStack.Count);
+
+		Debug.Log ("\n\n\n  STACK");
+		for (int i = movementStack.Count; i > 0; i--) {
+			movement = movementStack.Pop ();
+			Debug.Log ("TIME: " + movement.time + " DIREÇÃO: " + movement.direction);
+		}
+		Debug.Log ("\n\n\n  LISTA");
+		for (int i = 0; i < pathToStart.Count; i++) {
+			Debug.Log ("TIME: " + pathToStart[i].time + " DIREÇÃO: " + pathToStart[i].direction);
 		}
 	}
 
@@ -335,7 +359,6 @@ public class CarMovement : MonoBehaviour {
 
 		if (Input.GetKeyUp (KeyCode.R) && reachedEnd) {
 			StartCoroutine (ReturnToStart());
-			//StartCoroutine(ReverseMovement());
 		}
 	}
 }
