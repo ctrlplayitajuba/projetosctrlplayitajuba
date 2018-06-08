@@ -20,8 +20,9 @@ GameObject:
   m_Component:
   - component: {fileID: 4757735195668122}
   - component: {fileID: 114556273092595014}
+  - component: {fileID: 143700276658812396}
   m_Layer: 0
-  m_Name: Carro
+  m_Name: Car
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -210,8 +211,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   speed: 5
-  moveTime: 4
   turnTime: 0.5
+  finishCollider: {fileID: 0}
 --- !u!136 &136365293081412558
 CapsuleCollider:
   m_ObjectHideFlags: 1
@@ -224,4 +225,21 @@ CapsuleCollider:
   m_Radius: 0.5
   m_Height: 2
   m_Direction: 1
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!143 &143700276658812396
+CharacterController:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1251738443868964}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Height: 2
+  m_Radius: 0.5
+  m_SlopeLimit: 45
+  m_StepOffset: 0.3
+  m_SkinWidth: 0.08
+  m_MinMoveDistance: 0.001
   m_Center: {x: 0, y: 0, z: 0}

@@ -24,12 +24,12 @@ public class CarMovement : MonoBehaviour {
 	/// </summary>
 	#region
 	//Variáveis FLOAT
-	[SerializeField] private float speed 			= 10.0f; 					//velocidade do carro
-	[SerializeField] private float turnTime 		= 0.5f;  					//tempo que o carro demorará para rotacionar
+	[SerializeField] private float speed 			= 50.0f; 					//velocidade do carro
+	[SerializeField] private float turnTime 		= 0.2f;  					//tempo que o carro demorará para rotacionar
 	private float moveTime 							= 0f;  				    	//duração de um movimento
 	private float CORRIDOR_WIDTH					= 10.0f;					//largura da pista
 	private float timer								= 0.0f;						//timer para uma nova detecção de paredes
-	private const float movementDelay				= 1.05f;						//margem de segurança de tempo para os movimentos 
+	private const float movementSafetyCoeficient	= 1.05f;					//margem de segurança de tempo para os movimentos 
 
 	//Variáveis BOOL
 	private bool isRotating 						= false;					//indica se o carro está rotacionando
@@ -107,7 +107,7 @@ public class CarMovement : MonoBehaviour {
 			Rotate (BACKWARDS, turnTime);
 			yield return new WaitForSeconds (turnTime);
 			Move (movement.time);
-			yield return new WaitForSeconds (movement.time);
+			yield return new WaitForSeconds (movement.time * movementSafetyCoeficient);
 			if(movement.direction == FORWARD)
 				Rotate (BACKWARDS, turnTime);
 			else
@@ -146,14 +146,16 @@ public class CarMovement : MonoBehaviour {
 					isReversing = true;
 					StartCoroutine (ReverseMovement ());
 					yield return new WaitWhile (() => isReversing);
-					Movement movement = new Movement ();
-					movement = movementStack.Pop ();
-					movement.FREE_FORWARD = false;
-					if (direction == RIGHT)
-						movement.FREE_RIGHT = false;
-					else if (direction == LEFT)
-						movement.FREE_LEFT = false;
-					movementStack.Push (movement);
+					if (movementStack.Count > 0) {
+						Movement movement = new Movement ();
+						movement = movementStack.Pop ();
+						movement.FREE_FORWARD = false;
+						if (direction == RIGHT)
+							movement.FREE_RIGHT = false;
+						else if (direction == LEFT)
+							movement.FREE_LEFT = false;
+						movementStack.Push (movement);
+					}
 				}
 			}
 		}
@@ -290,9 +292,11 @@ public class CarMovement : MonoBehaviour {
 		yield return new WaitForSeconds (turnTime);
 		for (int i = 0; i < pathToStart.Count; i++) {
 			Move (pathToStart[i].time);
-			yield return new WaitForSeconds (pathToStart[i].time);
-			Rotate (pathToStart[i].direction, turnTime);
-			yield return new WaitForSeconds (turnTime);
+			yield return new WaitForSeconds (pathToStart[i].time * movementSafetyCoeficient);
+			if (pathToStart [i].direction != FORWARD) {
+				Rotate (pathToStart [i].direction, turnTime);
+				yield return new WaitForSeconds (turnTime);
+			}
 		}
 		Rotate (BACKWARDS, turnTime);
 		yield return new WaitForSeconds (turnTime);
@@ -304,10 +308,12 @@ public class CarMovement : MonoBehaviour {
 	/// <returns>delay</returns>
 	private IEnumerator GoToEnd() {
 		for (int i = 0; i < pathToEnd.Count; i++) {
-			Rotate (pathToEnd[i].direction, turnTime);
-			yield return new WaitForSeconds (turnTime);
+			if (pathToEnd [i].direction != FORWARD) {
+				Rotate (pathToEnd [i].direction, turnTime);
+				yield return new WaitForSeconds (turnTime);
+			}
 			Move (pathToEnd[i].time);
-			yield return new WaitForSeconds (pathToEnd[i].time * movementDelay);
+			yield return new WaitForSeconds (pathToEnd[i].time * movementSafetyCoeficient);
 		}
 	}
 
