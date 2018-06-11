@@ -227,7 +227,7 @@ public class CarMovement : MonoBehaviour {
 		}
 		Debug.DrawLine(ray.origin, hit.point);
 
-		NewMovement (canTurnLeft, canTurnRight, canGoForward);
+		DetectionTreatment (canTurnLeft, canTurnRight, canGoForward);
 	}
 
 	/// <summary>
@@ -238,7 +238,7 @@ public class CarMovement : MonoBehaviour {
 	/// <param name="canTurnLeft">If set to <c>true</c> can turn left.</param>
 	/// <param name="canTurnRight">If set to <c>true</c> can turn right.</param>
 	/// <param name="canGoForward">If set to <c>true</c> can go forward.</param>
-	private void NewMovement(bool canTurnLeft, bool canTurnRight, bool canGoForward){
+	private void DetectionTreatment(bool canTurnLeft, bool canTurnRight, bool canGoForward){
 		if (canGoForward && !canTurnLeft && !canTurnRight) {
 			canMove = true;
 		}
@@ -260,10 +260,8 @@ public class CarMovement : MonoBehaviour {
 					Rotate (FORWARD, turnTime);
 					initialTurn = FORWARD;
 				}
-				else {
-					if (!isRewinding && !reachedEnd)
+				else if (!isRewinding && !reachedEnd)
 						StartCoroutine (Rewind ());
-				}
 			}
 		}
 	}
