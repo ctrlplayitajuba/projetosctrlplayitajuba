@@ -43,8 +43,8 @@ public class CarMovement : MonoBehaviour {
 	private Stack<Movement> movementStack 			= new Stack<Movement>();	//pilha que guarda a sequência de movimentos do carro
 
 	//Variáveis LIST
-	private List<Movement> pathToEnd				= new List<Movement>();
-	private List<Movement> pathToStart				= new List<Movement>();
+	private List<Movement> pathToEnd				= new List<Movement>();		//lista de movimentos que levam do começo até o fim
+	private List<Movement> pathToStart				= new List<Movement>();		//lista de movimentos que levam do fim até o começo
 
 	//Variáveis INT
 	private int initialTurn							= FORWARD;					//direção que o carro virou no início do movimento
@@ -58,132 +58,47 @@ public class CarMovement : MonoBehaviour {
 	private CharacterController controller;										//character controller do carro
 
 	//Variáveis COLLIDER
-	public Collider finishCollider;
+	public Collider finishCollider;												//collider que indica o final do labirinto
 	#endregion
 
 	/// <summary>
-	/// Indica que a rotação do carro terminou
+	/// Inicializa o vetor de direções TurnAngle com os ângulos corretos para cada direção e guarda a referência do CharacterController do carrinho
 	/// </summary>
-	private void FinishedRotating(){
-		isRotating = false;
-		moveTime = 0f;
-		isCreatingMovement = false;
+	void Start () {
+		controller = GetComponent<CharacterController>();
+
+		TurnAngle = new int[4];
+		TurnAngle [FORWARD] 	= 0;
+		TurnAngle [RIGHT] 		= 90;
+		TurnAngle [BACKWARDS] 	= 180;
+		TurnAngle [LEFT]		= -90;
 	}
 
 	/// <summary>
-	/// Método que faz o carro se mover para frente por "time" segundos
+	/// Implementa a lógica Detecção -> Tratamento -> Movimento
 	/// </summary>
-	/// <param name="time">tempo que o carro continuará em movimento</param>
-	public void Move (float moveTime){
-		iTween.MoveBy(gameObject, iTween.Hash(
-			"x", moveTime*speed, 
-			"time", moveTime, 
-			"easetype", iTween.EaseType.linear,
-			"oncomplete", "FinishedMoving"));
-	}
-
-	/// <summary>
-	/// Método que faz o carro girar no própio eixo por "angle" graus
-	/// </summary>
-	/// <param name="angle"> ângulo em graus que o carro vai virar </param>
-	/// <param name="turnTime"> tempo que demora para o carro girar </param>
-	public void Rotate (int angle, float turnTime){
-		isRotating = true;
-		iTween.RotateBy (gameObject, iTween.Hash (
-			"y", TurnAngle[angle]/360.0f,
-			"time", turnTime,
-			"easetype", iTween.EaseType.linear,
-			"oncomplete", "FinishedRotating"));
-	}
-
-	/// <summary>
-	/// Retira o último movimento realizado da pilha de movimentos
-	/// e executa seu inverso
-	/// </summary>
-	private IEnumerator ReverseMovement () {
-		canMove = false;
-		if (movementStack.Count != 0) {
-			Movement movement = movementStack.Pop ();
-			Rotate (BACKWARDS, turnTime);
-			yield return new WaitForSeconds (turnTime);
-			Move (movement.time);
-			yield return new WaitForSeconds (movement.time * movementSafetyCoeficient);
-			if(movement.direction == FORWARD)
-				Rotate (BACKWARDS, turnTime);
-			else
-				Rotate (movement.direction, turnTime);
-			yield return new WaitForSeconds (turnTime);
+	void Update () {
+		if (isCreatingMovement || isRewinding || reachedEnd)
+			timer = 0;
+		else
+			timer += Time.deltaTime;
+		if (timer > CORRIDOR_WIDTH / speed) {
+			if(!isRotating)
+				Detection ();
+			timer = 0;
 		}
-		isReversing = false;
-	}
 
-	private IEnumerator Rewind () {
-		isRewinding = true;
-		while (movementStack.Count > 0) {
-			if (movementStack.Peek ().FREE_RIGHT) {
-				Rotate (RIGHT, turnTime);
-				initialTurn = RIGHT;
-				yield return new WaitForSeconds (turnTime);
-				canMove = true;
-				Movement movement = movementStack.Pop ();
-				movement.FREE_RIGHT = false;
-				movementStack.Push (movement);
-				break;
-			} else if (movementStack.Peek ().FREE_LEFT) {
-				Rotate (LEFT, turnTime);
-				initialTurn = LEFT;
-				yield return new WaitForSeconds (turnTime);
-				canMove = true;
-				Movement movement = movementStack.Pop ();
-				movement.FREE_LEFT = false;
-				movementStack.Push (movement);
-				break;
-			} else {
-				if (movementStack.Count < 1)
-					break;
-				else {
-					int direction = movementStack.Peek ().direction;
-					isReversing = true;
-					StartCoroutine (ReverseMovement ());
-					yield return new WaitWhile (() => isReversing);
-					if (movementStack.Count > 0) {
-						Movement movement = new Movement ();
-						movement = movementStack.Pop ();
-						movement.FREE_FORWARD = false;
-						if (direction == RIGHT)
-							movement.FREE_RIGHT = false;
-						else if (direction == LEFT)
-							movement.FREE_LEFT = false;
-						movementStack.Push (movement);
-					}
-				}
-			}
+		if (canMove && !isRotating && !reachedEnd) {
+			controller.Move(GetForwardDirection() * speed * Time.deltaTime);
+			moveTime += Time.deltaTime;
 		}
-		isRewinding = false;
-	}
 
-	/// <summary>
-	/// Mostra a direção para frente local do carro
-	/// </summary>
-	/// <returns>The forward direction.</returns>
-	private Vector3 GetForwardDirection(){
-		return transform.right;
-	}
-
-	/// <summary>
-	/// Mostra a direção para a direita local do carro
-	/// </summary>
-	/// <returns>The right direction.</returns>
-	private Vector3 GetRightDirection(){
-		return - transform.forward;
-	}
-
-	/// <summary>
-	/// Mostra a direção para a esquerda local do carro
-	/// </summary>
-	/// <returns>The left direction.</returns>
-	private Vector3 GetLeftDirection(){
-		return transform.forward;
+		if (Input.GetKeyUp (KeyCode.S) && reachedEnd) {
+			StartCoroutine (ReturnToStart());
+		}
+		if (Input.GetKeyUp (KeyCode.E) && reachedEnd) {
+			StartCoroutine (GoToEnd());
+		}
 	}
 
 	/// <summary>
@@ -261,7 +176,7 @@ public class CarMovement : MonoBehaviour {
 					initialTurn = FORWARD;
 				}
 				else if (!isRewinding && !reachedEnd)
-						StartCoroutine (Rewind ());
+					StartCoroutine (Rewind ());
 			}
 		}
 	}
@@ -279,6 +194,129 @@ public class CarMovement : MonoBehaviour {
 		movement.FREE_FORWARD = canGoForward;
 		movementStack.Push(movement);
 		canMove = true;
+	}
+
+	/// <summary>
+	/// Cria listas com os movimentos necessários para ir do destino final até o começo e vice-versa
+	/// </summary>
+	private void MakePaths(){
+		reachedEnd = true;
+		Stack<Movement> movesToStart = new Stack<Movement>(new Stack<Movement>(new Stack<Movement>(movementStack)));
+		Stack<Movement> movesToEnd = new Stack<Movement>();
+		Movement movement = new Movement ();
+
+		for (int i = movesToStart.Count; i > 0; i--) {
+			movement = movesToStart.Pop ();
+			movesToEnd.Push (movement);
+			if (movement.direction == RIGHT)
+				movement.direction = LEFT;
+			else if (movement.direction == LEFT)
+				movement.direction = RIGHT;
+			pathToStart.Insert (0, movement);
+		}
+		for (int i = movesToEnd.Count; i > 0; i--) {
+			pathToEnd.Insert (0, movesToEnd.Pop ());
+		}
+	}
+
+	/// <summary>
+	/// Método que faz o carro girar no própio eixo por "angle" graus
+	/// </summary>
+	/// <param name="angle"> ângulo em graus que o carro vai virar </param>
+	/// <param name="turnTime"> tempo que demora para o carro girar </param>
+	public void Rotate (int angle, float turnTime){
+		isRotating = true;
+		iTween.RotateBy (gameObject, iTween.Hash (
+			"y", TurnAngle[angle]/360.0f,
+			"time", turnTime,
+			"easetype", iTween.EaseType.linear,
+			"oncomplete", "FinishedRotating"));
+	}
+
+	/// <summary>
+	/// Indica que a rotação do carro terminou
+	/// </summary>
+	private void FinishedRotating(){
+		isRotating = false;
+		moveTime = 0f;
+		isCreatingMovement = false;
+	}
+
+	/// <summary>
+	/// Método para continuar retirando movimentos da pilha enquanto não houver caminhos disponíveis.
+	/// Assim que exister um caminho disponível, o carro é rotacionado para a direção correta.
+	/// Cada movimento que é invertido, sua direção é marcada como indisponível.
+	/// </summary>
+	private IEnumerator Rewind () {
+		isRewinding = true;
+		while (movementStack.Count > 0) {
+			if (movementStack.Peek ().FREE_RIGHT) {
+				Rotate (RIGHT, turnTime);
+				initialTurn = RIGHT;
+				yield return new WaitForSeconds (turnTime);
+				canMove = true;
+				break;
+			} else if (movementStack.Peek ().FREE_LEFT) {
+				Rotate (LEFT, turnTime);
+				initialTurn = LEFT;
+				yield return new WaitForSeconds (turnTime);
+				canMove = true;
+				break;
+			} else {
+				if (movementStack.Count < 1)
+					break;
+				else {
+					int direction = movementStack.Peek ().direction;
+					isReversing = true;
+					StartCoroutine (ReverseMovement ());
+					yield return new WaitWhile (() => isReversing);
+					if (movementStack.Count > 0) {
+						Movement movement = new Movement ();
+						movement = movementStack.Pop ();
+						movement.FREE_FORWARD = false;
+						if (direction == RIGHT)
+							movement.FREE_RIGHT = false;
+						else if (direction == LEFT)
+							movement.FREE_LEFT = false;
+						movementStack.Push (movement);
+					}
+				}
+			}
+		}
+		isRewinding = false;
+	}
+
+	/// <summary>
+	/// Retira o último movimento realizado da pilha de movimentos
+	/// e executa seu inverso
+	/// </summary>
+	private IEnumerator ReverseMovement () {
+		canMove = false;
+		if (movementStack.Count != 0) {
+			Movement movement = movementStack.Pop ();
+			Rotate (BACKWARDS, turnTime);
+			yield return new WaitForSeconds (turnTime);
+			Move (movement.time);
+			yield return new WaitForSeconds (movement.time * movementSafetyCoeficient);
+			if(movement.direction == FORWARD)
+				Rotate (BACKWARDS, turnTime);
+			else
+				Rotate (movement.direction, turnTime);
+			yield return new WaitForSeconds (turnTime);
+		}
+		isReversing = false;
+	}
+
+	/// <summary>
+	/// Método que faz o carro se mover para frente por "time" segundos
+	/// </summary>
+	/// <param name="time">tempo que o carro continuará em movimento</param>
+	public void Move (float moveTime){
+		iTween.MoveBy(gameObject, iTween.Hash(
+			"x", moveTime*speed, 
+			"time", moveTime, 
+			"easetype", iTween.EaseType.linear,
+			"oncomplete", "FinishedMoving"));
 	}
 
 	/// <summary>
@@ -316,64 +354,26 @@ public class CarMovement : MonoBehaviour {
 	}
 
 	/// <summary>
-	/// Cria listas com os movimentos necessários para ir do destino final até o começo e vice-versa
+	/// Mostra a direção para frente local do carro
 	/// </summary>
-	private void MakePaths(){
-		reachedEnd = true;
-		Stack<Movement> movesToStart = new Stack<Movement>(new Stack<Movement>(new Stack<Movement>(movementStack)));
-		Stack<Movement> movesToEnd = new Stack<Movement>();
-		Movement movement = new Movement ();
-
-		for (int i = movesToStart.Count; i > 0; i--) {
-			movement = movesToStart.Pop ();
-			movesToEnd.Push (movement);
-			if (movement.direction == RIGHT)
-				movement.direction = LEFT;
-			else if (movement.direction == LEFT)
-				movement.direction = RIGHT;
-			pathToStart.Insert (0, movement);
-		}
-		for (int i = movesToEnd.Count; i > 0; i--) {
-			pathToEnd.Insert (0, movesToEnd.Pop ());
-		}
+	/// <returns>The forward direction.</returns>
+	private Vector3 GetForwardDirection(){
+		return transform.right;
 	}
 
-	// Use this for initialization
-	void Start () {
-		controller = GetComponent<CharacterController>();
-
-		TurnAngle = new int[4];
-		TurnAngle [FORWARD] 	= 0;
-		TurnAngle [RIGHT] 		= 90;
-		TurnAngle [BACKWARDS] 	= 180;
-		TurnAngle [LEFT]		= -90;
+	/// <summary>
+	/// Mostra a direção para a direita local do carro
+	/// </summary>
+	/// <returns>The right direction.</returns>
+	private Vector3 GetRightDirection(){
+		return - transform.forward;
 	}
 
-	// Update is called once per frame
-	void Update () {
-		if (isCreatingMovement || isRewinding || reachedEnd)
-			timer = 0;
-		else
-			timer += Time.deltaTime;
-		if (timer > CORRIDOR_WIDTH / speed) {
-			if(!isRotating)
-				Detection ();
-			timer = 0;
-		}
-
-		if (canMove && !isRotating && !reachedEnd) {
-			controller.Move(GetForwardDirection() * speed * Time.deltaTime);
-			moveTime += Time.deltaTime;
-		}
-
-		if (Input.GetKeyUp (KeyCode.S) && reachedEnd) {
-			StartCoroutine (ReturnToStart());
-		}
-		if (Input.GetKeyUp (KeyCode.E) && reachedEnd) {
-			StartCoroutine (GoToEnd());
-		}
-		if (Input.GetKeyUp (KeyCode.R) && reachedEnd) {
-			Rotate(BACKWARDS, turnTime);
-		}
+	/// <summary>
+	/// Mostra a direção para a esquerda local do carro
+	/// </summary>
+	/// <returns>The left direction.</returns>
+	private Vector3 GetLeftDirection(){
+		return transform.forward;
 	}
 }
