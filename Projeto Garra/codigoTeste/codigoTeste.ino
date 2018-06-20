@@ -12,23 +12,22 @@
 
 /* Servo names/numbers */
 /* Base servo HS-485HB */
-#define BAS_SERVO_PIN 0
+#define BAS_SERVO_PIN 11
 /* Shoulder Servo HS-5745-MG */
-#define SHL_SERVO_PIN 1
+#define SHL_SERVO_PIN 10
 /* Elbow Servo HS-5745-MG */
-#define ELB_SERVO_PIN 2
+#define ELB_SERVO_PIN 9
 /* Wrist servo HS-645MG */
-#define WRI_SERVO_PIN 3 
+#define WRI_SERVO_PIN 8 
 /* Wrist rotate servo HS-485HB */
-#define WRO_SERVO_PIN 4
+#define WRO_SERVO_PIN 7
 /* Gripper servo HS-422 */
-#define GRI_SERVO_PIN 5
+#define GRI_SERVO_PIN 6
 
 /* pre-calculations */
 float hum_sq = HUMERUS * HUMERUS;
 float uln_sq = ULNA * ULNA;
 
-ServoShield servos;                       //ServoShield object
 Servo  BAS_SERVO;
 Servo  SHL_SERVO;
 Servo  ELB_SERVO;
