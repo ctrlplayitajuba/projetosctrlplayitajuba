@@ -294,14 +294,14 @@ public class CarMovement : MonoBehaviour {
 		canMove = false;
 		if (movementStack.Count != 0) {
 			Movement movement = movementStack.Pop ();
-			Rotate (BACKWARDS, turnTime);
-			yield return new WaitForSeconds (turnTime);
-			Move (movement.time);
+			MoveBack (movement.time);
 			yield return new WaitForSeconds (movement.time * movementSafetyCoeficient);
-			if(movement.direction == FORWARD)
-				Rotate (BACKWARDS, turnTime);
-			else
-				Rotate (movement.direction, turnTime);
+			if (movement.direction == FORWARD)
+				Rotate (FORWARD, turnTime);
+			else if (movement.direction == LEFT)
+				Rotate (RIGHT, turnTime);
+			else if (movement.direction == RIGHT)
+				Rotate (LEFT, turnTime);
 			yield return new WaitForSeconds (turnTime);
 		}
 		isReversing = false;
@@ -314,6 +314,18 @@ public class CarMovement : MonoBehaviour {
 	public void Move (float moveTime){
 		iTween.MoveBy(gameObject, iTween.Hash(
 			"x", moveTime*speed, 
+			"time", moveTime, 
+			"easetype", iTween.EaseType.linear,
+			"oncomplete", "FinishedMoving"));
+	}
+
+	/// <summary>
+	/// Método que faz o carro se mover para trás por "time" segundos
+	/// </summary>
+	/// <param name="time">tempo que o carro continuará em movimento</param>
+	public void MoveBack (float moveTime){
+		iTween.MoveBy(gameObject, iTween.Hash(
+			"x", moveTime * -speed, 
 			"time", moveTime, 
 			"easetype", iTween.EaseType.linear,
 			"oncomplete", "FinishedMoving"));

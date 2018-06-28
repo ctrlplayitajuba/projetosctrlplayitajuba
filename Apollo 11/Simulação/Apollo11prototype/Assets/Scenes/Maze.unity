@@ -3939,7 +3939,7 @@ Prefab:
     - target: {fileID: 114556273092595014, guid: 5cc03f3fb7f655c458bdbde342e4927e,
         type: 2}
       propertyPath: speed
-      value: 40
+      value: 25
       objectReference: {fileID: 0}
     - target: {fileID: 114556273092595014, guid: 5cc03f3fb7f655c458bdbde342e4927e,
         type: 2}
@@ -8492,6 +8492,7 @@ GameObject:
   - component: {fileID: 2009081574}
   - component: {fileID: 2009081573}
   - component: {fileID: 2009081572}
+  - component: {fileID: 2009081576}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -8556,12 +8557,24 @@ Transform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 2009081571}
   m_LocalRotation: {x: -0.7071068, y: -0, z: -0, w: -0.7071068}
-  m_LocalPosition: {x: 45.57413, y: 123.651566, z: 72.99281}
+  m_LocalPosition: {x: 27.1, y: 120, z: 78.9}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2009081576
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 2009081571}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cc68d5f390dddee4f86cd9b05ef3c952, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  car: {fileID: 404219528}
 --- !u!1001 &2013862296
 Prefab:
   m_ObjectHideFlags: 0
