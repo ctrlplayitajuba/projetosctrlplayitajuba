@@ -4,7 +4,11 @@ using UnityEngine.Networking;
 public class PlayerController : NetworkBehaviour
 {
 	public GameObject bulletPrefab;
-	public Transform bulletSpawn;
+	private Transform bulletSpawn;
+
+	void Start(){
+		bulletSpawn = gameObject.transform.GetChild (2);
+	}
 
 	void Update()
 	{
