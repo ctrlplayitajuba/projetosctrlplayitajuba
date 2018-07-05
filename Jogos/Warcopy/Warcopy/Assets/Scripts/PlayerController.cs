@@ -1,15 +1,31 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Networking;
 
-public class PlayerController : MonoBehaviour {
+public class PlayerController : NetworkBehaviour {
 
-	private Joystick joystick;
-	private Rigidbody player;
-	private Transform mainCamera;
-	private Vector3 cameraOffset;
-	public float deadZoneLimit = 5f;
-	public float speed = 10f;
+	/// <summary>
+	/// Game related variables
+	/// </summary>
+	#region
+	private Joystick joystick; 								//referência do joystick virtual do jogo
+	private Transform mainCamera;							//câmera principal do jogo que seguirá o jogador
+	private Vector3 cameraOffset;							//distância entre jogador e a câmera
+	[SerializeField] private float deadZoneLimit = 5f;		//tamanho da área morta da câmera
+	#endregion
+
+	/// <summary>
+	/// Player related variables
+	/// </summary>
+	#region
+	private Rigidbody player;								//referência do rigidbody3d do jogador
+	[SerializeField] private float speed = 10f;				//velocidade de movimento do jogador]
+	public GameObject fireball;								//bola de fogo que o jogador pode lançar
+	#endregion
+
+
+
 
 	// Use this for initialization
 	void Start () {
@@ -21,6 +37,9 @@ public class PlayerController : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
+		if (!isLocalPlayer) {
+			return;
+		}
 		player.velocity = new Vector3 (joystick.Horizontal * speed, player.velocity.y, joystick.Vertical * speed);
 		MoveCamera ();
 	}
