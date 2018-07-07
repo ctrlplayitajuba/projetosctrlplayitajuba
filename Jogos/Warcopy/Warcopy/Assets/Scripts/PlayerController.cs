@@ -23,7 +23,7 @@ public class PlayerController : NetworkBehaviour {
 	private Transform spellSpawnPoint;						//ponto em que as bolas de fogo são spawnadas
 	public GameObject fireball;								//bola de fogo que o jogador pode lançar
 	[SerializeField] private float fireballSpeed    = 15f;  //velocidade de movimento da bola de fogo
-	[SerializeField] private float fireballCooldown = 15f;	//velocidade de movimento da bola de fogo
+	[SerializeField] private float fireballCooldown = 1f;	//velocidade de movimento da bola de fogo
 	#endregion
 
 	// Use this for initialization
@@ -32,6 +32,7 @@ public class PlayerController : NetworkBehaviour {
 		spellSpawnPoint = this.transform.GetChild (1);
 		joystick = FindObjectOfType<Joystick> ();
 		buttonFireball = GameObject.FindWithTag("Fireball").GetComponent<Joybutton>();
+		buttonFireball.setCooldown (fireballCooldown);
 		player = GetComponent<Rigidbody>();
 		mainCamera = Camera.main.transform;
 	}
@@ -65,7 +66,7 @@ public class PlayerController : NetworkBehaviour {
 	/// Faz o jogador sempre olhar para a direção que está andando
 	/// </summary>
 	void LookForward(){
-		this.transform.LookAt (this.transform.position + new Vector3(joystick.Horizontal, 0, joystick.Vertical));
+		this.transform.LookAt (this.transform.position + (new Vector3(joystick.Horizontal, 0, joystick.Vertical)) * 2);
 	}
 
 	/// <summary>
