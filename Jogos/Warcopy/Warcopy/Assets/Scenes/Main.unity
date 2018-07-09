@@ -442,6 +442,63 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 12
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &1109525857
+Prefab:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 4488179701308940, guid: 499e03e936240274dac6cbabe94f6029, type: 2}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4488179701308940, guid: 499e03e936240274dac6cbabe94f6029, type: 2}
+      propertyPath: m_LocalPosition.y
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4488179701308940, guid: 499e03e936240274dac6cbabe94f6029, type: 2}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4488179701308940, guid: 499e03e936240274dac6cbabe94f6029, type: 2}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4488179701308940, guid: 499e03e936240274dac6cbabe94f6029, type: 2}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4488179701308940, guid: 499e03e936240274dac6cbabe94f6029, type: 2}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4488179701308940, guid: 499e03e936240274dac6cbabe94f6029, type: 2}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4488179701308940, guid: 499e03e936240274dac6cbabe94f6029, type: 2}
+      propertyPath: m_RootOrder
+      value: 13
+      objectReference: {fileID: 0}
+    - target: {fileID: 114547747919914338, guid: 499e03e936240274dac6cbabe94f6029,
+        type: 2}
+      propertyPath: m_ServerOnly
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 114547747919914338, guid: 499e03e936240274dac6cbabe94f6029,
+        type: 2}
+      propertyPath: m_LocalPlayerAuthority
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 114092865375081300, guid: 499e03e936240274dac6cbabe94f6029,
+        type: 2}
+      propertyPath: m_TransformSyncMode
+      value: 1
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+  m_ParentPrefab: {fileID: 100100000, guid: 499e03e936240274dac6cbabe94f6029, type: 2}
+  m_IsPrefabParent: 0
 --- !u!224 &1115305901 stripped
 RectTransform:
   m_PrefabParentObject: {fileID: 224180655752175416, guid: 2c66755a76e63904f8067f70f5ad7fac,
@@ -707,8 +764,8 @@ GameObject:
   serializedVersion: 5
   m_Component:
   - component: {fileID: 1824789667}
-  - component: {fileID: 1824789664}
   - component: {fileID: 1824789665}
+  - component: {fileID: 1824789664}
   m_Layer: 0
   m_Name: NetworkManager
   m_TagString: Untagged
@@ -724,7 +781,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1824789663}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e08619ef648ad8e47804e5f3915903f0, type: 3}
+  m_Script: {fileID: -822479833, guid: dc443db3e92b4983b9738c1131f555cb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   m_NetworkPort: 7777
