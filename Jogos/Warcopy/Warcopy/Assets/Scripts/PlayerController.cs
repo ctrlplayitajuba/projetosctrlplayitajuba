@@ -58,7 +58,7 @@ public class PlayerController : NetworkBehaviour {
 	void MoveCamera() {
 		Vector3 positionInDeadZone = this.transform.position - mainCamera.position + cameraOffset;
 		if (positionInDeadZone.magnitude > deadZoneLimit) {
-			mainCamera.Translate (positionInDeadZone.normalized * speed * Time.deltaTime * 0.95f, Space.World);
+			mainCamera.Translate (positionInDeadZone.normalized * speed * Time.deltaTime * 0.9f, Space.World);
 		}
 	}
 
