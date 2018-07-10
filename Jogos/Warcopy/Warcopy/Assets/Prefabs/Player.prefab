@@ -198,7 +198,7 @@ Rigidbody:
   serializedVersion: 2
   m_Mass: 1
   m_Drag: 0.5
-  m_AngularDrag: 9999999
+  m_AngularDrag: 999999
   m_UseGravity: 1
   m_IsKinematic: 0
   m_Interpolate: 0
@@ -246,7 +246,7 @@ MonoBehaviour:
   m_SyncSpin: 1
   m_MovementTheshold: 0.001
   m_VelocityThreshold: 0.0001
-  m_SnapThreshold: 5
+  m_SnapThreshold: 100
   m_InterpolateRotation: 1
   m_InterpolateMovement: 1
 --- !u!114 &114285237492584906
@@ -296,4 +296,4 @@ MonoBehaviour:
     i14: 96
     i15: 41
   m_ServerOnly: 0
-  m_LocalPlayerAuthority: 0
+  m_LocalPlayerAuthority: 1

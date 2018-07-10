@@ -82,4 +82,15 @@ public class PlayerController : NetworkBehaviour {
 		NetworkServer.Spawn (ball);
 		Destroy (ball, 5f);
 	}
+
+	/// <summary>
+	/// É chamado quando o jogador é atingido por uma magia que empurra o jogador
+	/// </summary>
+	/// <param name="force">Força do empurrão que o jogador sofre.</param>
+	/// <param name="explosionPoint">Ponto central do objeto que atingiu o jogador.</param>
+	/// <param name="radius">Raio da área de efeito da colisão</param>
+	[Command]
+	public void CmdPush(float force, Vector3 explosionPoint, float radius){
+		player.AddExplosionForce (force, explosionPoint, radius);
+	}
 }
