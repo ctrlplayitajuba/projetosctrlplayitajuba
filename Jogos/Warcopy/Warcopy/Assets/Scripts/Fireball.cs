@@ -6,12 +6,13 @@ using UnityEngine.Networking;
 public class Fireball : NetworkBehaviour {
 	[SerializeField] private float force = 500f;
 	void OnCollisionEnter(Collision collision){
-		CmdPush (collision.gameObject);
-	}
-
-	[Command]
-	void CmdPush (GameObject ob){
-		Destroy (gameObject);
-		ob.GetComponent<Rigidbody>().AddExplosionForce (force, this.transform.position, 1f);
+		if (!isServer) {
+			return;
+		}
+		PlayerController pc = collision.gameObject.GetComponent<PlayerController> ();
+		if (pc != null) {
+			pc.TargetPush (pc.connectionToClient, force, this.transform.position);
+			Destroy (gameObject);
+		}
 	}
 }
