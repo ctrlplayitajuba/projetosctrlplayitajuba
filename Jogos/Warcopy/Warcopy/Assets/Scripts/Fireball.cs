@@ -9,10 +9,15 @@ public class Fireball : NetworkBehaviour {
 		if (!isServer) {
 			return;
 		}
-		PlayerController pc = collision.gameObject.GetComponent<PlayerController> ();
+		CmdPushPlayers (collision.gameObject);
+		Destroy (gameObject);
+
+	}
+	[Command]
+	void CmdPushPlayers(GameObject ob){
+		PlayerController pc = ob.gameObject.GetComponent<PlayerController> ();
 		if (pc != null) {
 			pc.TargetPush (pc.connectionToClient, force, this.transform.position);
-			Destroy (gameObject);
 		}
 	}
 }
