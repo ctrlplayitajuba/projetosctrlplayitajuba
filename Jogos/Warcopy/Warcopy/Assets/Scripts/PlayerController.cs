@@ -19,6 +19,7 @@ public class PlayerController : NetworkBehaviour {
 	/// </summary>
 	#region
 	private Rigidbody playerRigidBody;							//referência do rigidbody do jogador
+	private PlayerHealth playerHealth;							//vida do jogador
 	[SerializeField] private float speed = 10f;					//velocidade de movimento do jogador
 	[SerializeField] private float movementSmoothFactor = 0.9f; //fator de suavidade do movimento do player
 	private Transform spellSpawnPoint;							//ponto em que as bolas de fogo são spawnadas
@@ -32,6 +33,7 @@ public class PlayerController : NetworkBehaviour {
 		cameraOffset = new Vector3 (0f, 35f, -25f);
 		spellSpawnPoint = this.transform.GetChild (1);
 		joystick = FindObjectOfType<Joystick> ();
+		playerHealth = GetComponent<PlayerHealth> ();
 		buttonFireball = GameObject.FindWithTag("Fireball").GetComponent<Joybutton>();
 		buttonFireball.setCooldown (fireballCooldown);
 		playerRigidBody = GetComponent<Rigidbody>();
@@ -44,27 +46,20 @@ public class PlayerController : NetworkBehaviour {
 			return;	
 		}
 		MoveCamera ();
-		CmdMovePlayer ();
+		MovePlayer ();
+		CheckLava ();
 		CheckSpells ();
 
 	}
 
 	/// <summary>
-	/// Move o player na direção do joystick virtual fazendo ele sempre olhar para frente
+	/// Move o player e faz com que ele sempre olhe para frente
 	/// </summary>
-	/// <param name="speed">Velocidade de movimento do player</param>
-	[TargetRpc]
-	public void TargetMovePlayer(NetworkConnection connection){
-		//playerRigidBody.velocity = new Vector3 (joystick.Horizontal * speed, playerRigidBody.velocity.y, joystick.Vertical * speed);
+	void MovePlayer(){
+		//TargetMovePlayer (connectionToClient);
 		Vector3 targetPosition = this.transform.position + new Vector3 (joystick.Horizontal * speed * Time.deltaTime, 0, joystick.Vertical * speed * Time.deltaTime);
 		this.transform.position = Vector3.Lerp(this.transform.position, targetPosition , Time.deltaTime * movementSmoothFactor);
-		//this.transform.Translate(new Vector3 (joystick.Horizontal * speed * Time.deltaTime, 0, joystick.Vertical * speed * Time.deltaTime), Space.World);
 		this.transform.LookAt (this.transform.position + (new Vector3(joystick.Horizontal, 0, joystick.Vertical)) * 2);
-	}
-
-	[Command]
-	void CmdMovePlayer(){
-		TargetMovePlayer (connectionToClient);
 	}
 
 	/// <summary>
@@ -75,6 +70,14 @@ public class PlayerController : NetworkBehaviour {
 		if (positionInDeadZone.magnitude > deadZoneLimit) {
 			float smoothModifier = 0.9f;
 			mainCamera.Translate (positionInDeadZone.normalized * speed * Time.deltaTime * smoothModifier, Space.World);
+		}
+	}
+
+	void CheckLava(){
+		RaycastHit hit;
+		Physics.Raycast (this.transform.position, Vector3.down, out hit, 3.0f);
+		if(hit.collider.tag.Equals("Lava")){
+			playerHealth.TakeDamage(10 * Time.deltaTime);
 		}
 	}
 
@@ -103,6 +106,6 @@ public class PlayerController : NetworkBehaviour {
 
 	[TargetRpc]
 	public void TargetPush(NetworkConnection connection, float force, Vector3 explosionPoint){
-		playerRigidBody.AddExplosionForce (force, explosionPoint, 1.5f);
+		playerRigidBody.AddExplosionForce (force, explosionPoint, 2.0f);
 	}
 }

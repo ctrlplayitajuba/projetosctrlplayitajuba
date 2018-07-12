@@ -5,17 +5,22 @@ using UnityEngine.Networking;
 
 public class Fireball : NetworkBehaviour {
 	[SerializeField] private float force = 500f;
+	[SerializeField] private float damage = 7.0f;
 	void OnCollisionEnter(Collision collision){
 		if (!isServer) {
 			return;
 		}
-		CmdPushPlayers (collision.gameObject);
+		CmdHitPlayer (collision.gameObject);
 		Destroy (gameObject);
 
 	}
 	[Command]
-	void CmdPushPlayers(GameObject ob){
+	void CmdHitPlayer(GameObject ob){
+		PlayerHealth ph = ob.gameObject.GetComponent<PlayerHealth> ();
 		PlayerController pc = ob.gameObject.GetComponent<PlayerController> ();
+		if (ph != null) {
+			ph.TakeDamage (damage);
+		}
 		if (pc != null) {
 			pc.TargetPush (pc.connectionToClient, force, this.transform.position);
 		}
