@@ -20,8 +20,8 @@ public class PlayerController : NetworkBehaviour {
 	#region
 	private Rigidbody playerRigidBody;							//referência do rigidbody do jogador
 	private PlayerHealth playerHealth;							//vida do jogador
+	private Transform playerHealthBar;							//barra de vida do jogador
 	[SerializeField] private float speed = 10f;					//velocidade de movimento do jogador
-	[SerializeField] private float movementSmoothFactor = 0.9f; //fator de suavidade do movimento do player
 	private Transform spellSpawnPoint;							//ponto em que as bolas de fogo são spawnadas
 	public GameObject fireball;									//bola de fogo que o jogador pode lançar
 	[SerializeField] private float fireballSpeed    = 15f;  	//velocidade de movimento da bola de fogo
@@ -38,6 +38,8 @@ public class PlayerController : NetworkBehaviour {
 		buttonFireball.setCooldown (fireballCooldown);
 		playerRigidBody = GetComponent<Rigidbody>();
 		mainCamera = Camera.main.transform;
+		playerHealthBar = this.transform.Find ("Healthbar");
+		playerHealthBar.rotation = mainCamera.transform.rotation;
 	}
 	
 	// Update is called once per frame
@@ -45,11 +47,11 @@ public class PlayerController : NetworkBehaviour {
 		if (!isLocalPlayer) {
 			return;	
 		}
+		playerHealthBar.rotation = mainCamera.rotation;
 		MoveCamera ();
 		MovePlayer ();
 		CheckLava ();
 		CheckSpells ();
-
 	}
 
 	/// <summary>
@@ -58,7 +60,7 @@ public class PlayerController : NetworkBehaviour {
 	void MovePlayer(){
 		//TargetMovePlayer (connectionToClient);
 		Vector3 targetPosition = this.transform.position + new Vector3 (joystick.Horizontal * speed * Time.deltaTime, 0, joystick.Vertical * speed * Time.deltaTime);
-		this.transform.position = Vector3.Lerp(this.transform.position, targetPosition , Time.deltaTime * movementSmoothFactor);
+		this.transform.position = Vector3.Lerp(this.transform.position, targetPosition , 1.0f);
 		this.transform.LookAt (this.transform.position + (new Vector3(joystick.Horizontal, 0, joystick.Vertical)) * 2);
 	}
 
@@ -68,11 +70,14 @@ public class PlayerController : NetworkBehaviour {
 	void MoveCamera() {
 		Vector3 positionInDeadZone = this.transform.position - mainCamera.position + cameraOffset;
 		if (positionInDeadZone.magnitude > deadZoneLimit) {
-			float smoothModifier = 0.9f;
+			float smoothModifier = 0.85f;
 			mainCamera.Translate (positionInDeadZone.normalized * speed * Time.deltaTime * smoothModifier, Space.World);
 		}
 	}
 
+	/// <summary>
+	/// Verifica se o jogador está pisando em lava
+	/// </summary>
 	void CheckLava(){
 		RaycastHit hit;
 		Physics.Raycast (this.transform.position, Vector3.down, out hit, 3.0f);
