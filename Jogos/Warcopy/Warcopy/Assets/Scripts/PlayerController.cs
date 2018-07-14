@@ -50,7 +50,7 @@ public class PlayerController : NetworkBehaviour {
 		playerHealthBar.rotation = mainCamera.rotation;
 		MoveCamera ();
 		MovePlayer ();
-		CheckLava ();
+		CmdCheckLava ();
 		CheckSpells ();
 	}
 
@@ -78,7 +78,8 @@ public class PlayerController : NetworkBehaviour {
 	/// <summary>
 	/// Verifica se o jogador está pisando em lava
 	/// </summary>
-	void CheckLava(){
+	[Command]
+	void CmdCheckLava(){
 		RaycastHit hit;
 		Physics.Raycast (this.transform.position, Vector3.down, out hit, 3.0f);
 		if(hit.collider.tag.Equals("Lava")){

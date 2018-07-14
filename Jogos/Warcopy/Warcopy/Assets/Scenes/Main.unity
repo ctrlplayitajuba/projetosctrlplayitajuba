@@ -763,8 +763,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   manager: {fileID: 1824789664}
   showGUI: 1
-  offsetX: 400
-  offsetY: 100
+  offsetX: 0
+  offsetY: 0
   buttonScale: 2
 --- !u!4 &1824789667
 Transform:

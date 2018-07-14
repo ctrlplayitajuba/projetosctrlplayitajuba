@@ -10,12 +10,11 @@ public class Fireball : NetworkBehaviour {
 		if (!isServer) {
 			return;
 		}
-		CmdHitPlayer (collision.gameObject);
+		HitPlayer (collision.gameObject);
 		Destroy (gameObject);
 
 	}
-	[Command]
-	void CmdHitPlayer(GameObject ob){
+	void HitPlayer(GameObject ob){
 		PlayerHealth ph = ob.gameObject.GetComponent<PlayerHealth> ();
 		PlayerController pc = ob.gameObject.GetComponent<PlayerController> ();
 		if (ph != null) {
