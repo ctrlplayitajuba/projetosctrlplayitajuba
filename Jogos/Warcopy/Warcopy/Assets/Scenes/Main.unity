@@ -442,6 +442,7 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 12
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+
 --- !u!1001 &825727239
 Prefab:
   m_ObjectHideFlags: 0
@@ -484,6 +485,7 @@ Prefab:
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: 1a7bcfb613ea5854d90cb5655e16b1a1, type: 2}
   m_IsPrefabParent: 0
+
 --- !u!224 &1115305901 stripped
 RectTransform:
   m_PrefabParentObject: {fileID: 224180655752175416, guid: 2c66755a76e63904f8067f70f5ad7fac,
@@ -695,6 +697,7 @@ MonoBehaviour:
   m_OnlineScene: 
   m_SpawnPrefabs:
   - {fileID: 1888856833368790, guid: 67a0fcedc7ff1f94c81e3aad1d581b93, type: 2}
+  - {fileID: 1630589803460846, guid: dbdec95acd410bd4baedea1589780d01, type: 2}
   m_CustomConfig: 0
   m_MaxConnections: 4
   m_ConnectionConfig:

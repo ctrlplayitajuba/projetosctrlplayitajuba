@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.Networking;
 
 public class Fireball : NetworkBehaviour {
+
 	[SerializeField] private float force = 500f;
 	[SerializeField] private float damage = 7.0f;
 	void OnCollisionEnter(Collision collision){
@@ -22,6 +23,6 @@ public class Fireball : NetworkBehaviour {
 		}
 		if (pc != null) {
 			pc.TargetPush (pc.connectionToClient, force, this.transform.position);
-		}
+    }
 	}
 }
