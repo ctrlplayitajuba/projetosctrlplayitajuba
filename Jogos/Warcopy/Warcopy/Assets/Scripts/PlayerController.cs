@@ -18,12 +18,14 @@ public class PlayerController : NetworkBehaviour {
 	/// Player related variables
 	/// </summary>
 	#region
-	private Rigidbody player;								//referência do rigidbody do jogador
-	[SerializeField] private float speed = 10f;				//velocidade de movimento do jogador
-	private Transform spellSpawnPoint;						//ponto em que as bolas de fogo são spawnadas
-	public GameObject fireball;								//bola de fogo que o jogador pode lançar
-	[SerializeField] private float fireballSpeed    = 15f;  //velocidade de movimento da bola de fogo
-	[SerializeField] private float fireballCooldown = 1f;	//velocidade de movimento da bola de fogo
+	private Rigidbody playerRigidBody;							//referência do rigidbody do jogador
+	private PlayerHealth playerHealth;							//vida do jogador
+	private Transform playerHealthBar;							//barra de vida do jogador
+	[SerializeField] private float speed = 10f;					//velocidade de movimento do jogador
+	private Transform spellSpawnPoint;							//ponto em que as bolas de fogo são spawnadas
+	public GameObject fireball;									//bola de fogo que o jogador pode lançar
+	[SerializeField] private float fireballSpeed    = 15f;  	//velocidade de movimento da bola de fogo
+	[SerializeField] private float fireballCooldown = 1f;		//velocidade de movimento da bola de fogo
 	#endregion
 
 	// Use this for initialization
@@ -31,25 +33,35 @@ public class PlayerController : NetworkBehaviour {
 		cameraOffset = new Vector3 (0f, 35f, -25f);
 		spellSpawnPoint = this.transform.GetChild (1);
 		joystick = FindObjectOfType<Joystick> ();
+		playerHealth = GetComponent<PlayerHealth> ();
 		buttonFireball = GameObject.FindWithTag("Fireball").GetComponent<Joybutton>();
 		buttonFireball.setCooldown (fireballCooldown);
-		player = GetComponent<Rigidbody>();
+		playerRigidBody = GetComponent<Rigidbody>();
 		mainCamera = Camera.main.transform;
+		playerHealthBar = this.transform.Find ("Healthbar");
+		playerHealthBar.rotation = mainCamera.transform.rotation;
 	}
 	
 	// Update is called once per frame
 	void Update () {
 		if (!isLocalPlayer) {
-			return;
+			return;	
 		}
-
-		player.velocity = new Vector3 (joystick.Horizontal * speed, player.velocity.y, joystick.Vertical * speed);
+		playerHealthBar.rotation = mainCamera.rotation;
 		MoveCamera ();
-		LookForward ();
+		MovePlayer ();
+		CmdCheckLava ();
+		CheckSpells ();
+	}
 
-		if (buttonFireball.isPressed ()) {
-			CmdCastFireball ();
-		}
+	/// <summary>
+	/// Move o player e faz com que ele sempre olhe para frente
+	/// </summary>
+	void MovePlayer(){
+		//TargetMovePlayer (connectionToClient);
+		Vector3 targetPosition = this.transform.position + new Vector3 (joystick.Horizontal * speed * Time.deltaTime, 0, joystick.Vertical * speed * Time.deltaTime);
+		this.transform.position = Vector3.Lerp(this.transform.position, targetPosition , 1.0f);
+		this.transform.LookAt (this.transform.position + (new Vector3(joystick.Horizontal, 0, joystick.Vertical)) * 2);
 	}
 
 	/// <summary>
@@ -58,15 +70,30 @@ public class PlayerController : NetworkBehaviour {
 	void MoveCamera() {
 		Vector3 positionInDeadZone = this.transform.position - mainCamera.position + cameraOffset;
 		if (positionInDeadZone.magnitude > deadZoneLimit) {
-			mainCamera.Translate (positionInDeadZone.normalized * speed * Time.deltaTime * 0.9f, Space.World);
+			float smoothModifier = 0.85f;
+			mainCamera.Translate (positionInDeadZone.normalized * speed * Time.deltaTime * smoothModifier, Space.World);
 		}
 	}
 
 	/// <summary>
-	/// Faz o jogador sempre olhar para a direção que está andando
+	/// Verifica se o jogador está pisando em lava
 	/// </summary>
-	void LookForward(){
-		this.transform.LookAt (this.transform.position + (new Vector3(joystick.Horizontal, 0, joystick.Vertical)) * 2);
+	[Command]
+	void CmdCheckLava(){
+		RaycastHit hit;
+		Physics.Raycast (this.transform.position, Vector3.down, out hit, 3.0f);
+		if(hit.collider.tag.Equals("Lava")){
+			playerHealth.TakeDamage(10 * Time.deltaTime);
+		}
+	}
+
+	/// <summary>
+	/// Checa se algum botão de feitiço foi pressionado
+	/// </summary>
+	void CheckSpells(){
+		if (buttonFireball.isPressed ()) {
+			CmdCastFireball ();
+		}
 	}
 
 	/// <summary>
@@ -83,14 +110,8 @@ public class PlayerController : NetworkBehaviour {
 		Destroy (ball, 5f);
 	}
 
-	/// <summary>
-	/// É chamado quando o jogador é atingido por uma magia que empurra o jogador
-	/// </summary>
-	/// <param name="force">Força do empurrão que o jogador sofre.</param>
-	/// <param name="explosionPoint">Ponto central do objeto que atingiu o jogador.</param>
-	/// <param name="radius">Raio da área de efeito da colisão</param>
-	[Command]
-	public void CmdPush(float force, Vector3 explosionPoint, float radius){
-		player.AddExplosionForce (force, explosionPoint, radius);
+	[TargetRpc]
+	public void TargetPush(NetworkConnection connection, float force, Vector3 explosionPoint){
+		playerRigidBody.AddExplosionForce (force, explosionPoint, 2.0f);
 	}
 }
