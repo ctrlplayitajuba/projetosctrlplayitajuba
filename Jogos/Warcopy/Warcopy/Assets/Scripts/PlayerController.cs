@@ -38,7 +38,11 @@ public class PlayerController : NetworkBehaviour {
 		buttonFireball.setCooldown (fireballCooldown);
 		playerRigidBody = GetComponent<Rigidbody>();
 		mainCamera = Camera.main.transform;
-		playerHealthBar = this.transform.Find ("Healthbar");
+		playerHealthBar = this.transform.Find ("Healthbar");;
+		playerHealthBar.rotation = mainCamera.transform.rotation;
+	}
+
+	void LateUpdate() {
 		playerHealthBar.rotation = mainCamera.transform.rotation;
 	}
 	
