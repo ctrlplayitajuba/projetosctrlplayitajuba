@@ -12,6 +12,12 @@ public class FixedJoystick : Joystick
     void Start()
     {
         joystickPosition = RectTransformUtility.WorldToScreenPoint(cam, background.position);
+		if (Application.platform == RuntimePlatform.WindowsPlayer || 
+			Application.platform == RuntimePlatform.LinuxPlayer   ||
+			Application.platform == RuntimePlatform.WindowsEditor ||
+			Application.platform == RuntimePlatform.LinuxEditor ) {
+			Destroy (gameObject);
+		}
     }
 
     public override void OnDrag(PointerEventData eventData)

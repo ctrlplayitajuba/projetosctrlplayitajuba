@@ -12,6 +12,13 @@ public class Joybutton : MonoBehaviour, IPointerUpHandler, IPointerDownHandler {
 		onCooldown = false;
 		cooldown = 1;
 		time = 0;
+
+		if (Application.platform == RuntimePlatform.WindowsPlayer || 
+			Application.platform == RuntimePlatform.LinuxPlayer   ||
+			Application.platform == RuntimePlatform.WindowsEditor ||
+			Application.platform == RuntimePlatform.LinuxEditor ) {
+			Destroy (gameObject);
+		}
 	}
 
 	void Update(){

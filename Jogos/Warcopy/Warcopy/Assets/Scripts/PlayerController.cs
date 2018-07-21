@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using System.Collections;
 using UnityEngine.Networking;
 
 public class PlayerController : NetworkBehaviour {
@@ -26,10 +27,12 @@ public class PlayerController : NetworkBehaviour {
 	public GameObject fireball;									//bola de fogo que o jogador pode lançar
 	[SerializeField] private float fireballSpeed    = 15f;  	//velocidade de movimento da bola de fogo
 	[SerializeField] private float fireballCooldown = 1f;		//velocidade de movimento da bola de fogo
+	private bool canFire;
 	#endregion
 
 	// Use this for initialization
 	void Start () {
+		canFire = true;
 		cameraOffset = new Vector3 (0f, 35f, -25f);
 		spellSpawnPoint = this.transform.GetChild (1);
 		joystick = FindObjectOfType<Joystick> ();
@@ -62,10 +65,27 @@ public class PlayerController : NetworkBehaviour {
 	/// Move o player e faz com que ele sempre olhe para frente
 	/// </summary>
 	void MovePlayer(){
-		//TargetMovePlayer (connectionToClient);
-		Vector3 targetPosition = this.transform.position + new Vector3 (joystick.Horizontal * speed * Time.deltaTime, 0, joystick.Vertical * speed * Time.deltaTime);
-		this.transform.position = Vector3.Lerp(this.transform.position, targetPosition , 1.0f);
-		this.transform.LookAt (this.transform.position + (new Vector3(joystick.Horizontal, 0, joystick.Vertical)) * 2);
+		if (Application.platform == RuntimePlatform.WindowsPlayer || 
+			Application.platform == RuntimePlatform.LinuxPlayer   ||
+			Application.platform == RuntimePlatform.WindowsEditor ||
+			Application.platform == RuntimePlatform.LinuxEditor ) {
+			Vector3 targetPosition = this.transform.position + new Vector3 (Input.GetAxis("Horizontal") * speed * Time.deltaTime, 0, Input.GetAxis("Vertical") * speed * Time.deltaTime);
+			this.transform.position = Vector3.Lerp(this.transform.position, targetPosition , 1.0f);
+
+			Ray cameraRay = Camera.main.ScreenPointToRay (Input.mousePosition);
+			Plane groundPlane = new Plane(Vector3.up, Vector3.zero);
+			float rayLength;
+
+			if(groundPlane.Raycast(cameraRay, out rayLength)){
+				Vector3 pointToLook = cameraRay.GetPoint(rayLength);
+
+				this.transform.LookAt(pointToLook);
+			}
+		} else {
+			Vector3 targetPosition = this.transform.position + new Vector3 (joystick.Horizontal * speed * Time.deltaTime, 0, joystick.Vertical * speed * Time.deltaTime);
+			this.transform.position = Vector3.Lerp(this.transform.position, targetPosition , 1.0f);
+			this.transform.LookAt (this.transform.position + (new Vector3(joystick.Horizontal, 0, joystick.Vertical)) * 2);
+		}
 	}
 
 	/// <summary>
@@ -74,7 +94,7 @@ public class PlayerController : NetworkBehaviour {
 	void MoveCamera() {
 		Vector3 positionInDeadZone = this.transform.position - mainCamera.position + cameraOffset;
 		if (positionInDeadZone.magnitude > deadZoneLimit) {
-			float smoothModifier = 0.85f;
+			float smoothModifier = 0.95f;
 			mainCamera.Translate (positionInDeadZone.normalized * speed * Time.deltaTime * smoothModifier, Space.World);
 		}
 	}
@@ -95,9 +115,29 @@ public class PlayerController : NetworkBehaviour {
 	/// Checa se algum botão de feitiço foi pressionado
 	/// </summary>
 	void CheckSpells(){
-		if (buttonFireball.isPressed ()) {
-			CmdCastFireball ();
+		if (Application.platform == RuntimePlatform.WindowsPlayer || 
+			Application.platform == RuntimePlatform.LinuxPlayer   ||
+			Application.platform == RuntimePlatform.WindowsEditor ||
+			Application.platform == RuntimePlatform.LinuxEditor ) {
+			if(Input.GetMouseButtonUp(0) && canFire){
+				CmdCastFireball ();
+				StartCoroutine(PcCooldown (fireballCooldown));
+			}
+		} else {
+			if (buttonFireball.isPressed ()) {
+				CmdCastFireball ();
+			}
 		}
+	}
+
+	/// <summary>
+	/// Implementação de cooldown para PC
+	/// </summary>
+	/// <returns>The cooldown.</returns>
+	IEnumerator PcCooldown(float seconds) {
+		canFire = false;
+		yield return new WaitForSeconds (seconds);
+		canFire = true;
 	}
 
 	/// <summary>
