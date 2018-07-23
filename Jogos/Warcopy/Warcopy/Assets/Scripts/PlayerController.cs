@@ -9,7 +9,8 @@ public class PlayerController : NetworkBehaviour {
 	/// </summary>
 	#region
 	private Joystick joystick; 								//referência do joystick virtual do jogo
-	private Joybutton buttonFireball;						//referência do botão virtual do jogo para a bola de fogo 
+	private Joybutton buttonFireball;						//referência do botão virtual do jogo para a fireball
+	private Joybutton buttonDash;							//referência do botão virtual do jogo para o dash
 	private Transform mainCamera;							//câmera principal do jogo que seguirá o jogador
 	private Vector3 cameraOffset;							//distância entre jogador e a câmera
 	[SerializeField] private float deadZoneLimit = 5f;		//tamanho da área morta da câmera
@@ -26,29 +27,44 @@ public class PlayerController : NetworkBehaviour {
 	private Transform spellSpawnPoint;							//ponto em que as bolas de fogo são spawnadas
 	public GameObject fireball;									//bola de fogo que o jogador pode lançar
 	[SerializeField] private float fireballSpeed    = 15f;  	//velocidade de movimento da bola de fogo
-	[SerializeField] private float fireballCooldown = 1f;		//velocidade de movimento da bola de fogo
+	[SerializeField] private float fireballCooldown = 1f;
+	[SerializeField] private float dashCooldown = 3f;			//velocidade de movimento da bola de fogo
+	[SerializeField] private float dashForceModifier = 1000f;	//modificador de força do dash
+	[SerializeField] private Vector3 DashVector3;   			//Vector3 do dash original para usar de referência ao remover a força
+
 	private bool canFire;
+	private bool canDash;
 	#endregion
 
 	// Use this for initialization
 	void Start () {
+		if (!(Application.platform == RuntimePlatform.WindowsPlayer || 
+			Application.platform == RuntimePlatform.LinuxPlayer   ||
+			Application.platform == RuntimePlatform.WindowsEditor ||
+			Application.platform == RuntimePlatform.LinuxEditor )) {
+			joystick = FindObjectOfType<Joystick> ();
+			buttonFireball = GameObject.FindWithTag("Fireball").GetComponent<Joybutton>();
+			buttonDash = GameObject.FindWithTag("Dash").GetComponent<Joybutton>();
+			buttonFireball.setCooldown (fireballCooldown);
+			buttonDash.setCooldown (dashCooldown);
+		}
 		canFire = true;
+		canDash = true;
 		cameraOffset = new Vector3 (0f, 35f, -25f);
 		spellSpawnPoint = this.transform.GetChild (1);
-		joystick = FindObjectOfType<Joystick> ();
+
 		playerHealth = GetComponent<PlayerHealth> ();
-		buttonFireball = GameObject.FindWithTag("Fireball").GetComponent<Joybutton>();
-		buttonFireball.setCooldown (fireballCooldown);
+
 		playerRigidBody = GetComponent<Rigidbody>();
 		mainCamera = Camera.main.transform;
-		playerHealthBar = this.transform.Find ("Healthbar");;
+		playerHealthBar = this.transform.Find ("Healthbar");
 		playerHealthBar.rotation = mainCamera.transform.rotation;
 	}
 
 	void LateUpdate() {
 		playerHealthBar.rotation = mainCamera.transform.rotation;
 	}
-	
+
 	// Update is called once per frame
 	void Update () {
 		if (!isLocalPlayer) {
@@ -58,7 +74,8 @@ public class PlayerController : NetworkBehaviour {
 		MoveCamera ();
 		MovePlayer ();
 		CmdCheckLava ();
-		CheckSpells ();
+		CheckSpellsFireball ();
+		CheckSpellsDash ();
 	}
 
 	/// <summary>
@@ -87,6 +104,21 @@ public class PlayerController : NetworkBehaviour {
 			this.transform.LookAt (this.transform.position + (new Vector3(joystick.Horizontal, 0, joystick.Vertical)) * 2);
 		}
 	}
+	/// <summary>
+	/// Habilidade de Dash do Player
+	/// </summary>
+	void Dash(){
+
+		DashVector3 = this.transform.forward;
+		playerRigidBody.AddForce (DashVector3 * dashForceModifier);
+
+	}
+
+	void Special(){
+
+
+
+	}
 
 	/// <summary>
 	/// Move a câmera conforme a posição do jogador, deixando uma zona morta no centro da tela em que a câmera não se move
@@ -114,14 +146,14 @@ public class PlayerController : NetworkBehaviour {
 	/// <summary>
 	/// Checa se algum botão de feitiço foi pressionado
 	/// </summary>
-	void CheckSpells(){
+	void CheckSpellsFireball(){
 		if (Application.platform == RuntimePlatform.WindowsPlayer || 
 			Application.platform == RuntimePlatform.LinuxPlayer   ||
 			Application.platform == RuntimePlatform.WindowsEditor ||
 			Application.platform == RuntimePlatform.LinuxEditor ) {
 			if(Input.GetMouseButtonUp(0) && canFire){
 				CmdCastFireball ();
-				StartCoroutine(PcCooldown (fireballCooldown));
+				StartCoroutine(PcCooldownFireball (fireballCooldown));
 			}
 		} else {
 			if (buttonFireball.isPressed ()) {
@@ -130,14 +162,37 @@ public class PlayerController : NetworkBehaviour {
 		}
 	}
 
+	void CheckSpellsDash(){
+		if (Application.platform == RuntimePlatform.WindowsPlayer || 
+			Application.platform == RuntimePlatform.LinuxPlayer   ||
+			Application.platform == RuntimePlatform.WindowsEditor ||
+			Application.platform == RuntimePlatform.LinuxEditor ) {
+			if(Input.GetKeyDown(KeyCode.LeftShift) && canDash){
+				Debug.Log ("isDashing");
+				Dash ();
+				StartCoroutine(PcCooldownDash (dashCooldown));
+			}
+		} else {
+			if (buttonDash.isPressed ()) {
+				Dash ();
+			}
+		}
+	}
+
 	/// <summary>
 	/// Implementação de cooldown para PC
 	/// </summary>
 	/// <returns>The cooldown.</returns>
-	IEnumerator PcCooldown(float seconds) {
+	IEnumerator PcCooldownFireball(float seconds) {
 		canFire = false;
 		yield return new WaitForSeconds (seconds);
 		canFire = true;
+	}
+
+	IEnumerator PcCooldownDash(float seconds) {
+		canDash = false;
+		yield return new WaitForSeconds (seconds);
+		canDash = true;
 	}
 
 	/// <summary>

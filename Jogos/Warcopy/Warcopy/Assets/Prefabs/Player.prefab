@@ -336,6 +336,10 @@ MonoBehaviour:
   fireball: {fileID: 1888856833368790, guid: 67a0fcedc7ff1f94c81e3aad1d581b93, type: 2}
   fireballSpeed: 35
   fireballCooldown: 1
+  dashCooldown: 1
+  dashForceModifier: 1e+10
+  dashForceRemoveDelay: 1
+  DashVector3: {x: 0, y: 0, z: 0}
 --- !u!114 &114435639524697460
 MonoBehaviour:
   m_ObjectHideFlags: 1
