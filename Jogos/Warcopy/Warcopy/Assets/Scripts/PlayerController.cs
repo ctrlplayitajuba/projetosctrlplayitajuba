@@ -11,6 +11,7 @@ public class PlayerController : NetworkBehaviour {
 	private Joystick joystick; 								//referência do joystick virtual do jogo
 	private Joybutton buttonFireball;						//referência do botão virtual do jogo para a fireball
 	private Joybutton buttonDash;							//referência do botão virtual do jogo para o dash
+	private Joybutton buttonSpecial;
 	private Transform mainCamera;							//câmera principal do jogo que seguirá o jogador
 	private Vector3 cameraOffset;							//distância entre jogador e a câmera
 	[SerializeField] private float deadZoneLimit = 5f;		//tamanho da área morta da câmera
@@ -26,14 +27,18 @@ public class PlayerController : NetworkBehaviour {
 	[SerializeField] private float speed = 10f;					//velocidade de movimento do jogador
 	private Transform spellSpawnPoint;							//ponto em que as bolas de fogo são spawnadas
 	public GameObject fireball;									//bola de fogo que o jogador pode lançar
+	public GameObject special;
 	[SerializeField] private float fireballSpeed    = 15f;  	//velocidade de movimento da bola de fogo
-	[SerializeField] private float fireballCooldown = 1f;
-	[SerializeField] private float dashCooldown = 3f;			//velocidade de movimento da bola de fogo
+	[SerializeField] private float fireballCooldown = 1f;		//cooldown da bola de fogo
 	[SerializeField] private float dashForceModifier = 1000f;	//modificador de força do dash
-	[SerializeField] private Vector3 DashVector3;   			//Vector3 do dash original para usar de referência ao remover a força
+	[SerializeField] private float dashCooldown = 3f;			//Cooldown do dash
+	[SerializeField] private float specialForceModifier = 1000f; //modificador de força do especial
+	[SerializeField] private float specialCooldown = 3f;		//Cooldown do special
 
+	private Vector3 DashVector3;   			//Vector3 do dash original para usar de referência ao remover a força
 	private bool canFire;
 	private bool canDash;
+	private bool canSpecial;
 	#endregion
 
 	// Use this for initialization
@@ -45,11 +50,13 @@ public class PlayerController : NetworkBehaviour {
 			joystick = FindObjectOfType<Joystick> ();
 			buttonFireball = GameObject.FindWithTag("Fireball").GetComponent<Joybutton>();
 			buttonDash = GameObject.FindWithTag("Dash").GetComponent<Joybutton>();
+			buttonSpecial = GameObject.FindWithTag("Special").GetComponent<Joybutton>();
 			buttonFireball.setCooldown (fireballCooldown);
 			buttonDash.setCooldown (dashCooldown);
 		}
 		canFire = true;
 		canDash = true;
+		canSpecial = true;
 		cameraOffset = new Vector3 (0f, 35f, -25f);
 		spellSpawnPoint = this.transform.GetChild (1);
 
@@ -76,6 +83,7 @@ public class PlayerController : NetworkBehaviour {
 		CmdCheckLava ();
 		CheckSpellsFireball ();
 		CheckSpellsDash ();
+		CheckSpellsSpecial ();
 	}
 
 	/// <summary>
@@ -113,10 +121,17 @@ public class PlayerController : NetworkBehaviour {
 		playerRigidBody.AddForce (DashVector3 * dashForceModifier);
 
 	}
+	[Command]
+	void CmdSpecial(){
 
-	void Special(){
-
-
+		if (!isServer) {
+			return;
+		} else {
+			Debug.Log ("Entrou no else do special");
+			Vector3 specialCenter = this.transform.position;
+			var sp = (GameObject)Instantiate (special, this.transform.position, this.transform.rotation);
+			NetworkServer.Spawn (sp);
+		}
 
 	}
 
@@ -179,6 +194,23 @@ public class PlayerController : NetworkBehaviour {
 		}
 	}
 
+	void CheckSpellsSpecial(){
+		if (Application.platform == RuntimePlatform.WindowsPlayer || 
+			Application.platform == RuntimePlatform.LinuxPlayer   ||
+			Application.platform == RuntimePlatform.WindowsEditor ||
+			Application.platform == RuntimePlatform.LinuxEditor ) {
+			if(Input.GetKeyDown(KeyCode.Space) && canSpecial){
+				Debug.Log ("isSpecial");
+				CmdSpecial ();
+				StartCoroutine(PcCooldownSpecial (specialCooldown));
+			}
+		} else {
+			if (buttonDash.isPressed ()) {
+				CmdSpecial ();
+			}
+		}
+	}
+
 	/// <summary>
 	/// Implementação de cooldown para PC
 	/// </summary>
@@ -193,6 +225,12 @@ public class PlayerController : NetworkBehaviour {
 		canDash = false;
 		yield return new WaitForSeconds (seconds);
 		canDash = true;
+	}
+
+	IEnumerator PcCooldownSpecial(float seconds) {
+		canSpecial = false;
+		yield return new WaitForSeconds (seconds);
+		canSpecial = true;
 	}
 
 	/// <summary>
@@ -210,7 +248,7 @@ public class PlayerController : NetworkBehaviour {
 	}
 
 	[TargetRpc]
-	public void TargetPush(NetworkConnection connection, float force, Vector3 explosionPoint){
-		playerRigidBody.AddExplosionForce (force, explosionPoint, 2.0f);
+	public void TargetPush(NetworkConnection connection, float force, Vector3 explosionPoint, float radius){
+		playerRigidBody.AddExplosionForce (force, explosionPoint, radius);
 	}
 }

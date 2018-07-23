@@ -22,7 +22,7 @@ public class Fireball : NetworkBehaviour {
 			ph.TakeDamage (damage);
 		}
 		if (pc != null) {
-			pc.TargetPush (pc.connectionToClient, force, this.transform.position);
+			pc.TargetPush (pc.connectionToClient, force, this.transform.position, 2f);
     }
 	}
 }

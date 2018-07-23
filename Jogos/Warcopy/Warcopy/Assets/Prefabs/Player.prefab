@@ -334,12 +334,13 @@ MonoBehaviour:
   deadZoneLimit: 5
   speed: 12
   fireball: {fileID: 1888856833368790, guid: 67a0fcedc7ff1f94c81e3aad1d581b93, type: 2}
+  special: {fileID: 1846603276427050, guid: 983f927890438cb4ea0ac8bc26608044, type: 2}
   fireballSpeed: 35
   fireballCooldown: 1
-  dashCooldown: 1
-  dashForceModifier: 1e+10
-  dashForceRemoveDelay: 1
-  DashVector3: {x: 0, y: 0, z: 0}
+  dashForceModifier: 1000
+  dashCooldown: 3
+  specialForceModifier: 1000
+  specialCooldown: 3
 --- !u!114 &114435639524697460
 MonoBehaviour:
   m_ObjectHideFlags: 1
