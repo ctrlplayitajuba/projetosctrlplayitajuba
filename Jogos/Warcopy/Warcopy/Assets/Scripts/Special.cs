@@ -16,7 +16,9 @@ public class Special : NetworkBehaviour {
 			if(co.gameObject.GetComponent<PlayerController>() != null)
 			{
 				Debug.Log ("SpecialHit target push a partir do special hit");
-				co.gameObject.GetComponent<PlayerController> ().TargetPush (co.gameObject.GetComponent<PlayerController> ().connectionToClient, 1000f, this.transform.position, 10f);
+				if (!co.gameObject.GetComponent<PlayerController> ().isLocalPlayer) {
+					co.gameObject.GetComponent<PlayerController> ().TargetPush (co.gameObject.GetComponent<PlayerController> ().connectionToClient, 1000f, this.transform.position, 10f);
+				}
 			}
 		}
 	}
